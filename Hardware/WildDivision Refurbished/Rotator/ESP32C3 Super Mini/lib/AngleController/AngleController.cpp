@@ -1,6 +1,7 @@
 #include "AngleController.h"
 
 float AngleController::SensorError = 0.0f;
+float AngleController::AzimuthOffset = 0.0f;
 
 AngleController::AngleController(DRV8871 &motor, MT6701 &sensor)
     : _motor(motor), _sensor(sensor), _targetAngle(0.0f), _currentSpeed(0.0f)
@@ -10,6 +11,14 @@ AngleController::AngleController(DRV8871 &motor, MT6701 &sensor)
     {
         SensorError = 0.0f;
         EEPROM.put(EEPROM_SENSOR_ERROR_ADDR, SensorError);
+        EEPROM.commit();
+    }
+
+    EEPROM.get(EEPROM_AZIMUTH_OFFSET_ADDR, AzimuthOffset);
+    if (isnan(AzimuthOffset) || AzimuthOffset < 0.0f || AzimuthOffset >= 360.0f)
+    {
+        AzimuthOffset = 0.0f;
+        EEPROM.put(EEPROM_AZIMUTH_OFFSET_ADDR, AzimuthOffset);
         EEPROM.commit();
     }
 }
@@ -177,4 +186,149 @@ void AngleController::update()
         _currentSpeed = std::max(-255.0f, std::min(255.0f, _currentSpeed));
         _motor.setSpeed(_currentSpeed);
     }
+}
+
+// Система ініціалізації
+InitializationStage AngleController::getInitializationStage()
+{
+    return _initStage;
+}
+
+void AngleController::setInitializationStage(InitializationStage stage)
+{
+    _initStage = stage;
+}
+
+bool AngleController::startInitialization(int stage)
+{
+    if (stage == 1)
+    {
+        _initStage = STAGE_1;
+        enableMovement();
+        moveToAngle(0);
+        return true;
+    }
+    else if (stage == 2)
+    {
+        _initStage = STAGE_2;
+        return true;
+    }
+    else if (stage == 3)
+    {
+        _initStage = STAGE_3;
+        return true;
+    }
+    else if (stage == 4)
+    {
+        _initStage = STAGE_4;
+        return true;
+    }
+    return false;
+}
+
+void AngleController::adjustSensorError(char direction)
+{
+    if (direction == 'L')
+    {
+        setSensorError(SensorError - 1.0f);
+    }
+    else if (direction == 'R')
+    {
+        setSensorError(SensorError + 1.0f);
+    }
+}
+
+// Система азимуту
+void AngleController::setAzimuthOffset(float azimuth)
+{
+    AzimuthOffset = fmod(azimuth, 360.0f);
+    if (AzimuthOffset < 0.0f)
+        AzimuthOffset += 360.0f;
+    EEPROM.put(EEPROM_AZIMUTH_OFFSET_ADDR, AzimuthOffset);
+    EEPROM.commit();
+}
+
+float AngleController::getAzimuthOffset()
+{
+    return AzimuthOffset;
+}
+
+float AngleController::angleToAzimuth(float angle)
+{
+    float azimuth = angle + AzimuthOffset;
+    azimuth = fmod(azimuth, 360.0f);
+    if (azimuth < 0.0f)
+        azimuth += 360.0f;
+    return azimuth;
+}
+
+float AngleController::azimuthToAngle(float azimuth)
+{
+    float angle = azimuth - AzimuthOffset;
+    angle = fmod(angle, 360.0f);
+    if (angle < 0.0f)
+        angle += 360.0f;
+    return angle;
+}
+
+void AngleController::moveToAzimuth(float azimuth)
+{
+    float angle = azimuthToAngle(azimuth);
+    moveToAngle(angle);
+}
+
+// Система помилок
+void AngleController::setError(ErrorType sensorError, ErrorType motorError)
+{
+    _sensorError = sensorError;
+    _motorError = motorError;
+
+    // При будь-якій помилці відключаємо рух
+    if (_sensorError != ERROR_NONE || _motorError != ERROR_NONE)
+    {
+        disableMovement();
+        Serial.print("ERROR,");
+        Serial.print((int)_sensorError);
+        Serial.print(",");
+        Serial.println((int)_motorError);
+    }
+}
+
+ErrorType AngleController::getSensorErrorType()
+{
+    return _sensorError;
+}
+
+ErrorType AngleController::getMotorError()
+{
+    return _motorError;
+}
+
+String AngleController::getStatusString()
+{
+    String status = "ST,ROTATOR_ESP-32C3_V0.1.0;ERROR,";
+    status += String((int)_sensorError);
+    status += ",";
+    status += String((int)_motorError);
+    return status;
+}
+
+String AngleController::getErrorString()
+{
+    String error = "ERROR,";
+    error += String((int)_sensorError);
+    error += ",";
+    error += String((int)_motorError);
+    return error;
+}
+
+// Статус системи
+bool AngleController::isActive()
+{
+    return _active;
+}
+
+float AngleController::getCurrentSpeed()
+{
+    return _currentSpeed;
 }

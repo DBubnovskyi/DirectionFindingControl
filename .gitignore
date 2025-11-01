@@ -5,3 +5,5 @@ Hardware/WildDivision Refurbished/Remote/ESP32-WROOM-1/.vscode/
 Hardware/WildDivision Refurbished/Remote/ESP32-WROOM-1/.pio/
 Hardware/WildDivision Refurbished/Rotator/ESP32C3 Super Mini/.pio/
 Hardware/WildDivision Refurbished/Rotator/ESP32C3 Super Mini/.vscode/
+Software/DirectionFindingApp/SerialConnect/SerialMonitor/obj/
+Software/DirectionFindingApp/SerialConnect/SerialMonitor/bin/
