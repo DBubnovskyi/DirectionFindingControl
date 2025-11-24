@@ -21,7 +21,7 @@ void DisplayUtils::showLoadingAnimation(U8G2 &display, const char *text, int ste
 void DisplayUtils::displayInit(U8G2 &display, Keypad &keypad, int x, int y)
 {
     display.clearBuffer();
-    display.drawUTF8(x, y, "Підготовка роботи,");
+    display.drawUTF8(x, y, "Підготовка до роботи");
     display.drawUTF8(x, y + 12, "після натискання #");
     display.drawUTF8(x, y + 24, "почнеться обертання");
     display.drawUTF8(x, y + 36, "в нульове положення");

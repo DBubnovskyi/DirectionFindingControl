@@ -1,29 +1,27 @@
 #include <Arduino.h>
-#include "interactionHeandler.h"
-#include "esp32LED.h"
-#include "SerialProcessor.h"
+#include "ScreenHandler.h"
+#include "KeypadHandler.h"
+#include "SerialHandler.h"
 
-ESP32LED led;
+ScreenHandler *screenHandler = new ScreenHandler(15, 16);
+KeypadHandler *keypadHandler = new KeypadHandler();
+SerialHandler *serialHandler = new SerialHandler();
 HardwareSerial RS485Serial(1);
-InteractionHeandler *keypadHandler;
 
 void setup()
 {
     Serial.begin(115200);
-    RS485Serial.begin(9600, SERIAL_8N1, 27, 26); // RX=27, TX=26
+    RS485Serial.begin(9600, SERIAL_8N1, 27, 26);
+    screenHandler->begin();
 
-    SerialProcessor::begin(&RS485Serial);
+    keypadHandler->begin(screenHandler);
 
-    keypadHandler = new InteractionHeandler();
-    keypadHandler->begin();
-    led.begin();
-    led.off();
+    serialHandler->begin(&RS485Serial, screenHandler);
 }
 
 void loop()
 {
     keypadHandler->handle();
-    SerialProcessor::handleSerialCommands();
-
+    serialHandler->handle();
     delay(10);
 }
