@@ -44,6 +44,8 @@ namespace SerialConnect
         private readonly object _lock = new();
         /// <summary> Task that handles data exchange with Arduino. </summary>
         private Task? _task;
+        /// <summary> Cancellation token source for task management. </summary>
+        private CancellationTokenSource? _cancellationTokenSource;
         /// <summary> Default baud rate for serial communication. </summary>
         private const int BAUD_RATE = (int)BaudRates.BR_115200;
         /// <summary> Current baud rate for the connection. </summary>
@@ -73,12 +75,46 @@ namespace SerialConnect
         /// <summary> Gets the list of available serial ports as a static method. </summary>
         public static string[] GetAvailablePorts() => SerialPort.GetPortNames();
 
+        /// <summary> Validates if the received message contains valid ASCII characters </summary>
+        private bool IsValidMessage(string message)
+        {
+            if (string.IsNullOrEmpty(message))
+                return false;
+
+            // Check if message contains only printable ASCII characters
+            foreach (char c in message)
+            {
+                if (c < 32 || c > 126) // Outside printable ASCII range
+                {
+                    // Allow some control characters like tab, but not others
+                    if (c != '\t' && c != '\r' && c != '\n')
+                        return false;
+                }
+            }
+
+            // Check if message looks like our expected format
+            return message.Contains("AZ,") || message.Contains("AN,") || message.Contains(";");
+        }
+
         /// <summary> Disconnect from the current serial port. </summary>
         public void Disconnect()
         {
             try
             {
-                _task?.Dispose();
+                // Cancel the task first
+                _cancellationTokenSource?.Cancel();
+                
+                // Wait for task to complete or timeout
+                if (_task != null && !_task.IsCompleted)
+                {
+                    _task.Wait(TimeSpan.FromMilliseconds(1000)); // Wait max 1 second
+                }
+                
+                // Dispose resources
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = null;
+                _task = null;
+                
                 OnStateChanged?.Invoke(State.Disconnected, $"Manually disconnected from {_portName}");
             }
             catch (Exception ex)
@@ -131,9 +167,20 @@ namespace SerialConnect
         {
             if (connection != null)
             {
-                connection.Encoding = System.Text.Encoding.UTF8;
+                // Configure serial port settings
+                connection.Encoding = System.Text.Encoding.ASCII; // Use ASCII instead of UTF-8
+                connection.NewLine = "\n"; // Set newline character
+                connection.ReadTimeout = 1000;
+                connection.WriteTimeout = 1000;
                 
-                _task?.Dispose();
+                // Cancel previous task if exists
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource?.Dispose();
+                
+                // Create new cancellation token
+                _cancellationTokenSource = new CancellationTokenSource();
+                var token = _cancellationTokenSource.Token;
+                
                 _task = Task.Run(() =>
                 {
                     try
@@ -147,19 +194,41 @@ namespace SerialConnect
                         OnStateChanged?.Invoke(State.Error, $"Error connecting to {connection.PortName}: {e.Message}");
                     }
 
-                    while (connection.IsOpen)
+                    while (connection.IsOpen && !token.IsCancellationRequested)
                     {
                         try
                         {
+                            // Check for cancellation
+                            token.ThrowIfCancellationRequested();
+                            
                             if (connection.BytesToRead > 0)
                             {
-                                OnStateChanged?.Invoke(State.Reading, "Reading data...");
-                                string line = connection.ReadLine();
-                                OnStateChanged?.Invoke(State.Readed, "Data read: " + line);
-
-                                lock (_lock)
+                                try
                                 {
-                                    OnMessageReceived?.Invoke(line);
+                                    OnStateChanged?.Invoke(State.Reading, "Reading data...");
+                                    string line = connection.ReadLine();
+                                    
+                                    // Clean up the received line
+                                    line = line.Trim('\r', '\n', '\0');
+                                    
+                                    // Only process if line is not empty and contains valid characters
+                                    if (!string.IsNullOrWhiteSpace(line) && IsValidMessage(line))
+                                    {
+                                        OnStateChanged?.Invoke(State.Readed, "Data read: " + line);
+                                        
+                                        lock (_lock)
+                                        {
+                                            OnMessageReceived?.Invoke(line);
+                                        }
+                                    }
+                                }
+                                catch (TimeoutException)
+                                {
+                                    // Ignore timeout exceptions during reading
+                                }
+                                catch (Exception readEx)
+                                {
+                                    OnStateChanged?.Invoke(State.Error, $"Read error: {readEx.Message}");
                                 }
                             }
 
@@ -184,6 +253,11 @@ namespace SerialConnect
                             
                             Thread.Sleep(10);
                         }
+                        catch (OperationCanceledException)
+                        {
+                            // Task was cancelled, exit gracefully
+                            break;
+                        }
                         catch (Exception e)
                         {
                             if (e is UnauthorizedAccessException || 
@@ -197,12 +271,23 @@ namespace SerialConnect
                             else
                             {
                                 OnStateChanged?.Invoke(State.Error, $"Communication error: {e.Message}");
-                                Thread.Sleep(100);
+                                if (!token.IsCancellationRequested)
+                                {
+                                    Thread.Sleep(100);
+                                }
                             }
                         }
                     }
-                    OnStateChanged?.Invoke(State.Disconnected, $"Disconnected from {connection.PortName}");
-                });
+                    
+                    // Close connection if still open
+                    try { connection.Close(); } catch { }
+                    
+                    // Only send disconnected event if not cancelled manually
+                    if (!token.IsCancellationRequested)
+                    {
+                        OnStateChanged?.Invoke(State.Disconnected, $"Disconnected from {connection.PortName}");
+                    }
+                }, token);
             }
         }
     }

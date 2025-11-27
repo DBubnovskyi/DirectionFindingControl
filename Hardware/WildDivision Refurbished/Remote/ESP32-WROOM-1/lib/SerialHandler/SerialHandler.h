@@ -24,8 +24,8 @@ private:
 public:
     static void begin(HardwareSerial *rs485Serial, ScreenHandler *screenHandler);
     static void handle();
-    static void processCommand(const String &command);
-    static void processResponce(const String &command);
+    static void processPcCommand(const String &command);
+    static void processRsResponce(const String &command);
     static void sendUsbSerial(const String &message);
     static void sendRsSerial(const String &message);
 };

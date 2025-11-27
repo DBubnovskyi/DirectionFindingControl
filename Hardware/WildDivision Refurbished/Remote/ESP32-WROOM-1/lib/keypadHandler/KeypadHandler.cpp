@@ -25,7 +25,7 @@ void KeypadHandler::handle()
 
     if (!key)
     {
-        return;
+        // return;
     }
 
     String currentScreen = screenHandler->getCurrentScreenKey();
@@ -35,27 +35,29 @@ void KeypadHandler::handle()
         if (key == '#')
         {
             SerialHandler::sendRsSerial("$IN,1;#ER,#AZ;#AN;");
-            String init1Data[] = {String(RotatorState::correction), "", "", "", ""};
-            screenHandler->showScreen("init1", init1Data);
+            screenHandler->showScreen("init1-2");
         }
     }
-    else if (currentScreen == "init1")
+    else if (currentScreen == "init2")
     {
         if (key == '4' || key == '6')
         {
             String correctionValue = (key == '4') ? "L" : "R";
-            String message = "$ER," + correctionValue + ";";
+            String message = "$ER," + correctionValue + ";#ER;";
             SerialHandler::sendRsSerial(message);
-            String init1Data[] = {String(RotatorState::correction), "", "", "", ""};
-            screenHandler->showScreen("init1", init1Data);
         }
         else if (key == '#')
         {
-            SerialHandler::sendRsSerial("$IN,2;");
-            screenHandler->showScreen("init2");
+            SerialHandler::sendRsSerial("$IN,3;#ER,#AZ;#AN;");
+            screenHandler->showScreen("init3");
+        }
+        else
+        {
+            String init2Data[] = {String(RotatorState::correction), "", "", "", ""};
+            screenHandler->showScreen("init2", init2Data);
         }
     }
-    else if (currentScreen == "init2")
+    else if (currentScreen == "init3")
     {
         if (key >= '0' && key <= '9')
         {
@@ -67,8 +69,8 @@ void KeypadHandler::handle()
             {
                 inputBuffer += key;
             }
-            String init2Data[] = {inputBuffer, "", "", "", ""};
-            screenHandler->showScreen("init2", init2Data);
+            String init3Data[] = {inputBuffer, "", "", "", ""};
+            screenHandler->showScreen("init3", init3Data);
         }
         else if (key == '#')
         {
@@ -76,7 +78,7 @@ void KeypadHandler::handle()
             if (value >= 0 && value <= 359)
             {
                 String init3Data[] = {String(RotatorState::angle), inputBuffer, String(RotatorState::correction), "", ""};
-                screenHandler->showScreen("init3", init3Data);
+                screenHandler->showScreen("init4", init3Data);
                 String message = "$AN_AZ," + inputBuffer + ";$IN,3;";
                 SerialHandler::sendRsSerial(message);
                 inputBuffer = "0";
@@ -84,8 +86,8 @@ void KeypadHandler::handle()
             else
             {
                 inputBuffer = "0";
-                String init2Data[] = {inputBuffer, "", "", "", ""};
-                screenHandler->showScreen("init2", init2Data);
+                String init3Data[] = {inputBuffer, "", "", "", ""};
+                screenHandler->showScreen("init3", init3Data);
             }
         }
         else if (key == '*')
@@ -98,11 +100,11 @@ void KeypadHandler::handle()
             {
                 inputBuffer = "0";
             }
-            String init2Data[] = {inputBuffer, "", "", "", ""};
-            screenHandler->showScreen("init2", init2Data);
+            String init3Data[] = {inputBuffer, "", "", "", ""};
+            screenHandler->showScreen("init3", init3Data);
         }
     }
-    else if (currentScreen == "init3")
+    else if (currentScreen == "init4")
     {
         if (key == '#')
         {
@@ -161,11 +163,11 @@ void KeypadHandler::handle()
             int value = inputBuffer.toInt();
             if (value >= 0 && value <= 359)
             {
-                String azimuthData[] = {String(RotatorState::angle), inputBuffer, "", "", ""};
-                screenHandler->showScreen("azimuth", azimuthData);
-                String message = "$AZ," + inputBuffer + ";";
+                String message = "$AZ," + inputBuffer + ";#AZ;";
                 SerialHandler::sendRsSerial(message);
                 inputBuffer = "0";
+                String azimuthData[] = {String(RotatorState::azimuth), inputBuffer, "", "", ""};
+                screenHandler->showScreen("azimuth", azimuthData);
             }
             else
             {
@@ -177,6 +179,11 @@ void KeypadHandler::handle()
         else if (key == '*')
         {
             screenHandler->showScreen("main");
+        }
+        else
+        {
+            String azimuthData[] = {String(RotatorState::azimuth), inputBuffer, "", "", ""};
+            screenHandler->showScreen("azimuth", azimuthData);
         }
     }
     else if (currentScreen == "angle")
@@ -199,11 +206,11 @@ void KeypadHandler::handle()
             int value = inputBuffer.toInt();
             if (value >= 0 && value <= 359)
             {
-                String angleData[] = {String(RotatorState::angle), inputBuffer, "", "", ""};
-                screenHandler->showScreen("angle", angleData);
-                String message = "$AN," + inputBuffer + ";";
+                String message = "$AN," + inputBuffer + ";#AN;";
                 SerialHandler::sendRsSerial(message);
                 inputBuffer = "0";
+                String angleData[] = {String(RotatorState::angle), inputBuffer, "", "", ""};
+                screenHandler->showScreen("angle", angleData);
             }
             else
             {
@@ -215,6 +222,11 @@ void KeypadHandler::handle()
         else if (key == '*')
         {
             screenHandler->showScreen("main");
+        }
+        else
+        {
+            String angleData[] = {String(RotatorState::angle), inputBuffer, "", "", ""};
+            screenHandler->showScreen("angle", angleData);
         }
     }
     else if (currentScreen == "settings")

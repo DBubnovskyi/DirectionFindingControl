@@ -36,7 +36,7 @@ void SerialHandler::sendRsSerial(const String &message)
     }
 }
 
-void SerialHandler::processCommand(const String &command)
+void SerialHandler::processPcCommand(const String &command)
 {
     if (command.startsWith("$AZ")) // AZIMUTH
     {
@@ -58,7 +58,7 @@ void SerialHandler::processCommand(const String &command)
     }
 }
 
-void SerialHandler::processResponce(const String &command)
+void SerialHandler::processRsResponce(const String &command)
 {
     if (command.startsWith("ER")) // Похибка
     {
@@ -75,6 +75,10 @@ void SerialHandler::processResponce(const String &command)
         int angle = StringUtils::GetValue(command, 1);
         RotatorState::angle = angle;
     }
+    else if (command.startsWith("IN,1"))
+    {
+        _screenHandler->showScreen("init2");
+    }
 }
 
 void SerialHandler::handle()
@@ -87,7 +91,7 @@ void SerialHandler::handle()
         Vector<String> words = StringUtils::Split(message, ';');
         for (const auto &word : words)
         {
-            processResponce(word);
+            processRsResponce(word);
         }
     }
 
@@ -99,7 +103,7 @@ void SerialHandler::handle()
         _responseBuffer = "";
         for (const auto &word : words)
         {
-            processCommand(word);
+            processPcCommand(word);
         }
         if (_responseBuffer.length() > 0)
         {
