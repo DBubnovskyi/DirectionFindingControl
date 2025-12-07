@@ -87,21 +87,22 @@ float normalizeAngle(float angle)
 
 void AngleController::moveToAngle(float targetAngle)
 {
-    // Перевірка дозволу на рух
-    if (!_movementEnabled)
+    // Перевірка дозволу на рух та ініціалізації
+    if (!_movementEnabled || !_active)
     {
         return;
     }
 
     _targetAngle = normalizeAngle(targetAngle);
     _startAngle = normalizeAngle(getSensorAngle());
-    _active = true;
+    _isRotating = true;
 }
 
 // Система дозволів
 void AngleController::enableMovement()
 {
     _movementEnabled = true;
+    _active = true;  // Дозволяємо операції
 
     // Якщо є відкладене переміщення до 0°
     if (_pendingZeroMove)
@@ -115,10 +116,11 @@ void AngleController::disableMovement()
 {
     _movementEnabled = false;
     _pendingZeroMove = false;
+    _active = false;  // Забороняємо операції
 
     // Зупиняємо поточний рух
     _motor.stop();
-    _active = false;
+    _isRotating = false;
     _currentSpeed = 0.0f;
 }
 
@@ -141,16 +143,16 @@ void AngleController::moveToZeroWhenEnabled()
 
 void AngleController::update()
 {
-    // Перевірка дозволу на рух
-    if (!_movementEnabled && _active)
+    // Перевірка дозволу на рух або ініціалізації
+    if ((!_movementEnabled || !_active) && _isRotating)
     {
         _motor.stop();
-        _active = false;
+        _isRotating = false;
         _currentSpeed = 0.0f;
         return;
     }
 
-    if (_active)
+    if (_isRotating)
     {
         const float currentAngle = normalizeAngle(getSensorAngle());
         const float error = computeError(_targetAngle, currentAngle);
@@ -159,14 +161,17 @@ void AngleController::update()
         if (fabs(error) < Tolerance)
         {
             _motor.stop();
-            _active = false;
+            _isRotating = false;
             _currentSpeed = 0.0f;
             return;
         }
 
-        // прискорення від поточної та пройденої помилки
-        float accelStart = map(waveFunction(map(fabs(error), 0, BreackAngle, 0, 1)), 0, 1, 0, MaxSpeed - MinSpeed);
-        float accelEnd = map(waveFunction(map(passed, 0, BreackAngle, 0, 1)), 0, 1, 0, MaxSpeed - MinSpeed);
+        // прискорення від поточної та пройденої помилки (синусоїдальне)
+        float errorNorm = constrain(fabs(error) / BreackAngle, 0.0f, 1.0f);
+        float passedNorm = constrain(passed / BreackAngle, 0.0f, 1.0f);
+        
+        float accelStart = waveFunction(errorNorm) * (MaxSpeed - MinSpeed);
+        float accelEnd = waveFunction(passedNorm) * (MaxSpeed - MinSpeed);
 
         _currentSpeed = std::min(accelStart, accelEnd) + MinSpeed;
 
@@ -204,6 +209,7 @@ bool AngleController::startInitialization(int stage)
     if (stage == 1)
     {
         _initStage = STAGE_1;
+        _active = true;  // Дозволяємо операції для ініціалізації
         enableMovement();
         moveToAngle(0);
         return true;
@@ -326,6 +332,11 @@ String AngleController::getErrorString()
 bool AngleController::isActive()
 {
     return _active;
+}
+
+bool AngleController::isRotating()
+{
+    return _isRotating;
 }
 
 float AngleController::getCurrentSpeed()

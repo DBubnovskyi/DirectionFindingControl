@@ -22,6 +22,7 @@ private:
     int GetValue(const String &command, int index);
     void SendResponse(const String &response);
     void AddToResponseBuffer(const String &response);
+    void sendRotationStatus(); // Відправка статусу обертання
 
 public:
     SerialProcessor(AngleController &controller, MT6701 &sensor, Stream &serial, ESP32LED &led);

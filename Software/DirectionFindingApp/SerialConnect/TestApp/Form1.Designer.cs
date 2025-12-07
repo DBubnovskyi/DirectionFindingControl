@@ -59,6 +59,8 @@
             btnAn = new Button();
             numericUpDownAn = new NumericUpDown();
             richTextBox1 = new RichTextBox();
+            groupBox4 = new GroupBox();
+            groupBox5 = new GroupBox();
             label14 = new Label();
             label15 = new Label();
             groupBox1.SuspendLayout();
@@ -67,6 +69,7 @@
             ((System.ComponentModel.ISupportInitialize)numericUpDownAz).BeginInit();
             groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDownAn).BeginInit();
+            groupBox5.SuspendLayout();
             SuspendLayout();
             // 
             // groupBox1
@@ -310,7 +313,7 @@
             groupBox2.Font = new Font("Segoe UI", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
             groupBox2.Location = new Point(12, 252);
             groupBox2.Name = "groupBox2";
-            groupBox2.Size = new Size(387, 184);
+            groupBox2.Size = new Size(260, 180);
             groupBox2.TabIndex = 4;
             groupBox2.TabStop = false;
             groupBox2.Text = "Азимут";
@@ -318,7 +321,7 @@
             // label12
             // 
             label12.AutoSize = true;
-            label12.Location = new Point(146, 35);
+            label12.Location = new Point(101, 35);
             label12.Name = "label12";
             label12.Size = new Size(53, 32);
             label12.TabIndex = 2;
@@ -326,9 +329,9 @@
             // 
             // btnAz
             // 
-            btnAz.Location = new Point(12, 126);
+            btnAz.Location = new Point(6, 126);
             btnAz.Name = "btnAz";
-            btnAz.Size = new Size(362, 41);
+            btnAz.Size = new Size(248, 41);
             btnAz.TabIndex = 1;
             btnAz.Text = "Задати";
             btnAz.UseVisualStyleBackColor = true;
@@ -336,23 +339,21 @@
             // 
             // numericUpDownAz
             // 
-            numericUpDownAz.Location = new Point(12, 81);
+            numericUpDownAz.Location = new Point(6, 81);
             numericUpDownAz.Maximum = new decimal(new int[] { 359, 0, 0, 0 });
             numericUpDownAz.Name = "numericUpDownAz";
-            numericUpDownAz.Size = new Size(362, 39);
+            numericUpDownAz.Size = new Size(248, 39);
             numericUpDownAz.TabIndex = 0;
             // 
             // groupBox3
             // 
-            groupBox3.Controls.Add(label15);
-            groupBox3.Controls.Add(label14);
             groupBox3.Controls.Add(label13);
             groupBox3.Controls.Add(btnAn);
             groupBox3.Controls.Add(numericUpDownAn);
             groupBox3.Font = new Font("Segoe UI", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
-            groupBox3.Location = new Point(405, 252);
+            groupBox3.Location = new Point(543, 252);
             groupBox3.Name = "groupBox3";
-            groupBox3.Size = new Size(398, 184);
+            groupBox3.Size = new Size(260, 180);
             groupBox3.TabIndex = 5;
             groupBox3.TabStop = false;
             groupBox3.Text = "Кут";
@@ -360,7 +361,7 @@
             // label13
             // 
             label13.AutoSize = true;
-            label13.Location = new Point(140, 35);
+            label13.Location = new Point(100, 35);
             label13.Name = "label13";
             label13.Size = new Size(53, 32);
             label13.TabIndex = 3;
@@ -368,9 +369,9 @@
             // 
             // btnAn
             // 
-            btnAn.Location = new Point(12, 126);
+            btnAn.Location = new Point(6, 126);
             btnAn.Name = "btnAn";
-            btnAn.Size = new Size(362, 41);
+            btnAn.Size = new Size(246, 41);
             btnAn.TabIndex = 2;
             btnAn.Text = "Задати";
             btnAn.UseVisualStyleBackColor = true;
@@ -378,10 +379,10 @@
             // 
             // numericUpDownAn
             // 
-            numericUpDownAn.Location = new Point(12, 81);
+            numericUpDownAn.Location = new Point(6, 81);
             numericUpDownAn.Maximum = new decimal(new int[] { 359, 0, 0, 0 });
             numericUpDownAn.Name = "numericUpDownAn";
-            numericUpDownAn.Size = new Size(362, 39);
+            numericUpDownAn.Size = new Size(246, 39);
             numericUpDownAn.TabIndex = 1;
             // 
             // richTextBox1
@@ -389,41 +390,61 @@
             richTextBox1.BackColor = SystemColors.WindowText;
             richTextBox1.Font = new Font("Consolas", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             richTextBox1.ForeColor = SystemColors.ButtonShadow;
-            richTextBox1.Location = new Point(12, 446);
+            richTextBox1.Location = new Point(12, 642);
             richTextBox1.Name = "richTextBox1";
             richTextBox1.ReadOnly = true;
             richTextBox1.Size = new Size(791, 146);
             richTextBox1.TabIndex = 6;
             richTextBox1.Text = "";
             // 
+            // groupBox4
+            // 
+            groupBox4.Location = new Point(12, 442);
+            groupBox4.Name = "groupBox4";
+            groupBox4.Size = new Size(791, 194);
+            groupBox4.TabIndex = 7;
+            groupBox4.TabStop = false;
+            groupBox4.Text = "Автоматичне сканування";
+            // 
+            // groupBox5
+            // 
+            groupBox5.Controls.Add(label15);
+            groupBox5.Controls.Add(label14);
+            groupBox5.Font = new Font("Segoe UI", 18F);
+            groupBox5.Location = new Point(278, 252);
+            groupBox5.Name = "groupBox5";
+            groupBox5.Size = new Size(259, 180);
+            groupBox5.TabIndex = 8;
+            groupBox5.TabStop = false;
+            groupBox5.Text = "Параметри";
+            // 
             // label14
             // 
             label14.AutoSize = true;
-            label14.Font = new Font("Segoe UI", 8F);
-            label14.ForeColor = Color.Black;
-            label14.Location = new Point(51, 46);
+            label14.Font = new Font("Segoe UI", 12F);
+            label14.Location = new Point(6, 35);
             label14.Name = "label14";
-            label14.Size = new Size(81, 13);
-            label14.TabIndex = 19;
-            label14.Text = "< стрілка ліво";
-            label14.Click += label14_Click;
+            label14.Size = new Size(95, 21);
+            label14.TabIndex = 3;
+            label14.Text = "шивидкість:";
             // 
             // label15
             // 
             label15.AutoSize = true;
-            label15.Font = new Font("Segoe UI", 8F);
-            label15.ForeColor = Color.Black;
-            label15.Location = new Point(199, 46);
+            label15.Font = new Font("Segoe UI", 12F);
+            label15.Location = new Point(107, 35);
             label15.Name = "label15";
-            label15.Size = new Size(92, 13);
-            label15.TabIndex = 20;
-            label15.Text = "стрілка право >";
+            label15.Size = new Size(19, 21);
+            label15.TabIndex = 4;
+            label15.Text = "0";
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(818, 604);
+            ClientSize = new Size(818, 800);
+            Controls.Add(groupBox5);
+            Controls.Add(groupBox4);
             Controls.Add(richTextBox1);
             Controls.Add(groupBox3);
             Controls.Add(groupBox2);
@@ -443,6 +464,8 @@
             groupBox3.ResumeLayout(false);
             groupBox3.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDownAn).EndInit();
+            groupBox5.ResumeLayout(false);
+            groupBox5.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -480,6 +503,8 @@
         private Label label12;
         private Label label13;
         private RichTextBox richTextBox1;
+        private GroupBox groupBox4;
+        private GroupBox groupBox5;
         private Label label14;
         private Label label15;
     }

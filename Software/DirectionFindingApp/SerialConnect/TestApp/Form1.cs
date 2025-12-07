@@ -115,10 +115,10 @@ namespace TestApp
 
         private void InitializeRefreshTimer()
         {
-            _refreshTimer = new System.Windows.Forms.Timer();
-            _refreshTimer.Interval = 2000; // Refresh every 2 seconds
-            _refreshTimer.Tick += RefreshTimer_Tick;
-            _refreshTimer.Start();
+            //_refreshTimer = new System.Windows.Forms.Timer();
+            //_refreshTimer.Interval = 2000; // Refresh every 2 seconds
+            //_refreshTimer.Tick += RefreshTimer_Tick;
+            //_refreshTimer.Start();
         }
 
         private void InitializeDataRequestTimer()
@@ -267,6 +267,14 @@ namespace TestApp
                             label13.Text = angle.ToString("000");
                         }
                     }
+                    else if (trimmedPart.StartsWith("SP,"))
+                    {
+                        string angleStr = trimmedPart.Substring(3).Trim();
+                        if (int.TryParse(angleStr, out int angle))
+                        {
+                            label14.Text = angle.ToString("000");
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -383,7 +391,7 @@ namespace TestApp
             // Крок 1: Початок оборотання антени в 0 положення
             if (_isConnected)
             {
-                _serial.Command = "$IN,1";
+                _serial.Command = "$IN,1;#IN";
             }
         }
 
@@ -392,7 +400,7 @@ namespace TestApp
             // Крок 2: Введення похибки магнітного датчика  
             if (_isConnected)
             {
-                _serial.Command = "$IN,3;";
+                _serial.Command = "$IN,3;#IN;";
             }
         }
 
@@ -419,7 +427,7 @@ namespace TestApp
             // Крок 3: Завершити
             if (_isConnected)
             {
-                _serial.Command = "$IN,4;";
+                _serial.Command = "$IN,4;#IN;";
             }
         }
 

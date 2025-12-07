@@ -79,6 +79,10 @@ void SerialHandler::processRsResponce(const String &command)
     {
         _screenHandler->showScreen("init2");
     }
+    else if (command.startsWith("IN,4"))
+    {
+        _screenHandler->showScreen("main");
+    }
 }
 
 void SerialHandler::handle()

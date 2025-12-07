@@ -223,22 +223,35 @@ void SerialProcessor::processCommand(const String &command)
 
 void SerialProcessor::handleSerialCommands()
 {
-    _led.off();
-    static bool wasActive = false;
+    static bool wasRotating = false;
+    static unsigned long lastStatusTime = 0;
+    
+    bool isRotating = _controller.isRotating();
+    unsigned long currentTime = millis();
 
-    // Перевіряємо завершення руху в етапі 1
-    InitializationStage currentStage = _controller.getInitializationStage();
-    bool isActive = _controller.isActive();
-
-    if (currentStage == STAGE_1 && wasActive && !isActive)
+    // Відправка статусу обертання
+    if (isRotating && (currentTime - lastStatusTime >= 100))
     {
-        // Рух до 0° завершено, відправляємо відповідь
-        String response = "IN,1;AN,0;ER,3;\n";
-        SendResponse(response);
-        _controller.setInitializationStage(STAGE_2); // Переходимо до етапу 2
+        sendRotationStatus();
+        lastStatusTime = currentTime;
+    }
+    else if (wasRotating && !isRotating)
+    {
+        sendRotationStatus();
     }
 
-    wasActive = isActive;
+    // Перевірка завершення ініціалізації етапу 1
+    if (_controller.getInitializationStage() == STAGE_1 && wasRotating && !isRotating)
+    {
+        String response = "IN,1;AN,0;ER,3;\n";
+        SendResponse(response);
+        _controller.setInitializationStage(STAGE_2);
+    }
+
+    wasRotating = isRotating;
+
+    // Обробка вхідних команд
+    _led.off();
 
     while (_serial.available() > 0)
     {
@@ -262,4 +275,15 @@ void SerialProcessor::handleSerialCommands()
 
         _led.off(); // Вимикаємо діод після обробки
     }
+}
+
+void SerialProcessor::sendRotationStatus()
+{
+    int speed = (int)_controller.getCurrentSpeed();
+    float angle = _controller.getSensorAngle();
+    float azimuth = _controller.angleToAzimuth(angle);
+    int rotatingStatus = _controller.isRotating() ? 1 : 0;
+    
+    String status = "SP," + String(speed) + ";AZ," + String((int)azimuth) + ";AN," + String((int)angle) + ";RT," + String(rotatingStatus) + ";\n";
+    SendResponse(status);
 }
