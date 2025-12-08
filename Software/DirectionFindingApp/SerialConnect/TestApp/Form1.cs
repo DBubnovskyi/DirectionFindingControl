@@ -6,9 +6,24 @@ namespace TestApp
     public partial class Form1 : Form
     {
         private Serial _serial = null!;
+        private DeviceSimulator _simulator = null!;
+        private bool _useSimulator = false;
         private System.Windows.Forms.Timer _refreshTimer = null!;
         private System.Windows.Forms.Timer _dataRequestTimer = null!;
+        private System.Windows.Forms.Timer _scanWaitTimer = null!;
         private bool _isConnected = false;
+
+        // Scanning state
+        private bool _isScanning = false;
+        private bool _isWaitingForStop = false;
+        private int _currentTargetAzimuth = 0;
+        private int _scanStartAzimuth = 0;
+        private int _scanEndAzimuth = 0;
+        private int _scanStep = 0;
+        private int _scanDirection = 1; // 1 for forward, -1 for backward
+        private bool _scanPendulumMode = true;
+        private int _currentSpeed = 0;
+        private int _anAzValue = 0; // Азимут на якому знаходиться кут 180
 
         public Form1()
         {
@@ -18,6 +33,7 @@ namespace TestApp
             LoadSerialPorts();
             InitializeRefreshTimer();
             InitializeDataRequestTimer();
+            InitializeScanTimer();
         }
 
         private void InitializeUI()
@@ -57,6 +73,32 @@ namespace TestApp
             btnAz.Click += BtnAz_Click;
             btnAn.Click += BtnAn_Click;
 
+            // Initialize scan controls
+            numericAzScanStart.Minimum = 0;
+            numericAzScanStart.Maximum = 359;
+            numericAzScanStart.Value = 0;
+            numericAzScanStart.ValueChanged += NumericAzScan_ValueChanged;
+
+            numericAzScanEnd.Minimum = 0;
+            numericAzScanEnd.Maximum = 359;
+            numericAzScanEnd.Value = 0;
+            numericAzScanEnd.ValueChanged += NumericAzScan_ValueChanged;
+
+            numericScanStep.Minimum = 1;
+            numericScanStep.Maximum = 180;
+            numericScanStep.Value = 10;
+
+            numericScanTime.Minimum = 1;
+            numericScanTime.Maximum = 3600;
+            numericScanTime.Value = 5;
+
+            radioButton1.Checked = true; // Pendulum mode by default
+            radioButton1.CheckedChanged += RadioButton_CheckedChanged;
+            radioButton2.CheckedChanged += RadioButton_CheckedChanged;
+
+            buttonScan.Click += ButtonScan_Click;
+            labelAN_AZ.Text = "000";
+
             // Handle form closing
             this.FormClosing += Form1_FormClosing;
         }
@@ -65,8 +107,14 @@ namespace TestApp
         {
             if (_isConnected)
             {
+                // Stop scanning if active
+                if (_isScanning)
+                {
+                    StopScanning();
+                }
+
                 int azimuth = (int)numericUpDownAz.Value;
-                _serial.Command = $"$AZ,{azimuth};";
+                SendCommand($"$AZ,{azimuth};");
             }
         }
 
@@ -75,7 +123,7 @@ namespace TestApp
             if (_isConnected)
             {
                 int angle = (int)numericUpDownAn.Value;
-                _serial.Command = $"$AN,{angle};";
+                SendCommand($"$AN,{angle};");
             }
         }
 
@@ -93,6 +141,8 @@ namespace TestApp
                 _refreshTimer?.Dispose();
                 _dataRequestTimer?.Stop();
                 _dataRequestTimer?.Dispose();
+                _scanWaitTimer?.Stop();
+                _scanWaitTimer?.Dispose();
 
                 if (_serial != null && _isConnected)
                 {
@@ -111,6 +161,10 @@ namespace TestApp
             _serial = new Serial();
             _serial.OnMessageReceived += OnSerialMessageReceived;
             _serial.OnStateChanged += OnSerialStateChanged;
+
+            _simulator = new DeviceSimulator();
+            _simulator.OnMessageReceived += OnSerialMessageReceived;
+            _simulator.OnStateChanged += OnSimulatorStateChanged;
         }
 
         private void InitializeRefreshTimer()
@@ -153,7 +207,7 @@ namespace TestApp
             {
                 if (_isConnected && !this.IsDisposed)
                 {
-                    _serial.Command = "#AZ;#AN;";
+                    SendCommand("#AZ;#AN;#SP;#AN_AZ;");
                 }
             }
             catch (Exception ex)
@@ -170,6 +224,15 @@ namespace TestApp
                 var selectedItem = listBox1.SelectedItem;
 
                 listBox1.Items.Clear();
+
+                // Add simulator as first item
+                var simulatorInfo = new SerialPortInfo
+                {
+                    PortName = "SIMULATOR",
+                    Description = "Симулятор пристрою",
+                    IsAvailable = true
+                };
+                listBox1.Items.Add(simulatorInfo);
 
                 foreach (var port in portInfos)
                 {
@@ -269,10 +332,26 @@ namespace TestApp
                     }
                     else if (trimmedPart.StartsWith("SP,"))
                     {
-                        string angleStr = trimmedPart.Substring(3).Trim();
-                        if (int.TryParse(angleStr, out int angle))
+                        string speedStr = trimmedPart.Substring(3).Trim();
+                        if (int.TryParse(speedStr, out int speed))
                         {
-                            label14.Text = angle.ToString("000");
+                            _currentSpeed = speed;
+                            label14.Text = speed.ToString("000");
+
+                            // Check if rotation stopped during scanning
+                            if (_isScanning && _isWaitingForStop && speed == 0)
+                            {
+                                OnRotationStopped();
+                            }
+                        }
+                    }
+                    else if (trimmedPart.StartsWith("AN_AZ,"))
+                    {
+                        string anAzStr = trimmedPart.Substring(6).Trim();
+                        if (int.TryParse(anAzStr, out int anAz))
+                        {
+                            _anAzValue = anAz;
+                            labelAN_AZ.Text = anAz.ToString("000");
                         }
                     }
                 }
@@ -321,6 +400,12 @@ namespace TestApp
                         _refreshTimer?.Start();
                         _dataRequestTimer?.Stop();
 
+                        // Stop scanning if active
+                        if (_isScanning)
+                        {
+                            StopScanning();
+                        }
+
                         // Disable controls in groupBox1 when disconnected
                         groupBox1.Enabled = false;
 
@@ -355,7 +440,14 @@ namespace TestApp
             if (_isConnected)
             {
                 // Disconnect
-                _serial.Disconnect();
+                if (_useSimulator)
+                {
+                    _simulator.Disconnect();
+                }
+                else
+                {
+                    _serial.Disconnect();
+                }
             }
             else
             {
@@ -367,7 +459,16 @@ namespace TestApp
 
                     try
                     {
-                        _serial.Connect(selectedPort.PortName);
+                        if (selectedPort.PortName == "SIMULATOR")
+                        {
+                            _useSimulator = true;
+                            _simulator.Connect();
+                        }
+                        else
+                        {
+                            _useSimulator = false;
+                            _serial.Connect(selectedPort.PortName);
+                        }
                     }
                     catch (Exception)
                     {
@@ -391,7 +492,7 @@ namespace TestApp
             // Крок 1: Початок оборотання антени в 0 положення
             if (_isConnected)
             {
-                _serial.Command = "$IN,1;#IN";
+                SendCommand("$IN,1;#IN");
             }
         }
 
@@ -400,7 +501,7 @@ namespace TestApp
             // Крок 2: Введення похибки магнітного датчика  
             if (_isConnected)
             {
-                _serial.Command = "$IN,3;#IN;";
+                SendCommand("$IN,3;#IN;");
             }
         }
 
@@ -409,7 +510,7 @@ namespace TestApp
             // Ручне керування - Ліво
             if (_isConnected)
             {
-                _serial.Command = "$ER,L;";
+                SendCommand("$ER,L;");
             }
         }
 
@@ -418,7 +519,7 @@ namespace TestApp
             // Ручне керування - Право
             if (_isConnected)
             {
-                _serial.Command = "$ER,R;";
+                SendCommand("$ER,R;");
             }
         }
 
@@ -427,7 +528,7 @@ namespace TestApp
             // Крок 3: Завершити
             if (_isConnected)
             {
-                _serial.Command = "$IN,4;#IN;";
+                SendCommand("$IN,4;#IN;");
             }
         }
 
@@ -437,7 +538,7 @@ namespace TestApp
             if (_isConnected)
             {
                 int azimuth = (int)numericUpDown1.Value;
-                _serial.Command = $"$AN_AZ,{azimuth};";
+                SendCommand($"$AN_AZ,{azimuth};");
             }
         }
 
@@ -446,13 +547,342 @@ namespace TestApp
             // Крок 4: Початок роботи
             if (_isConnected)
             {
-                _serial.Command = "START_OPERATION";
+                SendCommand("START_OPERATION");
             }
         }
 
         private void label14_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void InitializeScanTimer()
+        {
+            _scanWaitTimer = new System.Windows.Forms.Timer();
+            _scanWaitTimer.Tick += ScanWaitTimer_Tick;
+        }
+
+        private void NumericAzScan_ValueChanged(object? sender, EventArgs e)
+        {
+            ValidateScanRange();
+        }
+
+        private void ValidateScanRange()
+        {
+            int start = (int)numericAzScanStart.Value;
+            int end = (int)numericAzScanEnd.Value;
+
+            // Check if range crosses 180 degree angle
+            if (CrossesAN_AZ(start, end, _anAzValue))
+            {
+                numericAzScanStart.Value = 0;
+                numericAzScanEnd.Value = 0;
+                MessageBox.Show($"Діапазон сканування не може перетинати кут 180° (азимут {_anAzValue}°)",
+                    "Помилка діапазону", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private bool CrossesAN_AZ(int start, int end, int anAz)
+        {
+            if (start == end) return false;
+
+            if (start < end)
+            {
+                // Normal range
+                return anAz > start && anAz < end;
+            }
+            else
+            {
+                // Range crosses 0/360
+                return anAz > start || anAz < end;
+            }
+        }
+
+        private void RadioButton_CheckedChanged(object? sender, EventArgs e)
+        {
+            if (sender == radioButton1 && radioButton1.Checked)
+            {
+                _scanPendulumMode = true;
+            }
+            else if (sender == radioButton2 && radioButton2.Checked)
+            {
+                _scanPendulumMode = false;
+            }
+        }
+
+        private void ButtonScan_Click(object? sender, EventArgs e)
+        {
+            if (!_isConnected)
+            {
+                MessageBox.Show("Підключіться до пристрою перед початком сканування",
+                    "Помилка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (_isScanning)
+            {
+                StopScanning();
+            }
+            else
+            {
+                StartScanning();
+            }
+        }
+
+        private void StartScanning()
+        {
+            _scanStartAzimuth = (int)numericAzScanStart.Value;
+            _scanEndAzimuth = (int)numericAzScanEnd.Value;
+            _scanStep = (int)numericScanStep.Value;
+
+            if (_scanStartAzimuth == _scanEndAzimuth)
+            {
+                MessageBox.Show("Початковий та кінцевий азимут не можуть бути однаковими",
+                    "Помилка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            _isScanning = true;
+            _currentTargetAzimuth = _scanStartAzimuth;
+            _scanDirection = DetermineScanDirection(_scanStartAzimuth, _scanEndAzimuth);
+
+            // Update UI
+            buttonScan.Text = "Зупинити сканування";
+            buttonScan.BackColor = Color.LimeGreen;
+
+            // Disable manual controls during scan
+            numericAzScanStart.Enabled = false;
+            numericAzScanEnd.Enabled = false;
+            numericScanStep.Enabled = false;
+            numericScanTime.Enabled = false;
+            radioButton1.Enabled = false;
+            radioButton2.Enabled = false;
+            btnAz.Enabled = false;
+            numericUpDownAz.Enabled = false;
+
+            // Start rotation to first position
+            RotateToAzimuth(_currentTargetAzimuth);
+        }
+
+        private void StopScanning()
+        {
+            _isScanning = false;
+            _isWaitingForStop = false;
+            _scanWaitTimer?.Stop();
+
+            // Update UI
+            buttonScan.Text = "Почати сканування";
+            buttonScan.BackColor = SystemColors.Control;
+            buttonScan.UseVisualStyleBackColor = true;
+
+            // Enable manual controls
+            numericAzScanStart.Enabled = true;
+            numericAzScanEnd.Enabled = true;
+            numericScanStep.Enabled = true;
+            numericScanTime.Enabled = true;
+            radioButton1.Enabled = true;
+            radioButton2.Enabled = true;
+            btnAz.Enabled = true;
+            numericUpDownAz.Enabled = true;
+        }
+
+        private int DetermineScanDirection(int start, int end)
+        {
+            // Determine shortest rotation direction
+            int diff = end - start;
+            if (diff < 0) diff += 360;
+
+            return diff <= 180 ? 1 : -1;
+        }
+
+        private void RotateToAzimuth(int azimuth)
+        {
+            _isWaitingForStop = true;
+            SendCommand($"$AZ,{azimuth};");
+        }
+
+        private void OnRotationStopped()
+        {
+            _isWaitingForStop = false;
+
+            if (!_isScanning)
+            {
+                return;
+            }
+
+            // Start wait timer before next movement
+            int waitTime = (int)(numericScanTime.Value * 1000); // Convert seconds to milliseconds
+            _scanWaitTimer.Interval = waitTime;
+            _scanWaitTimer.Start();
+        }
+
+        private void ScanWaitTimer_Tick(object? sender, EventArgs e)
+        {
+            _scanWaitTimer.Stop();
+
+            if (!_isScanning)
+            {
+                return;
+            }
+
+            // Calculate next azimuth
+            int nextAzimuth = CalculateNextAzimuth();
+
+            if (nextAzimuth == -1)
+            {
+                // Reached end of scan range
+                HandleScanRangeEnd();
+            }
+            else
+            {
+                _currentTargetAzimuth = nextAzimuth;
+                RotateToAzimuth(_currentTargetAzimuth);
+            }
+        }
+
+        private int CalculateNextAzimuth()
+        {
+            int next = _currentTargetAzimuth + (_scanStep * _scanDirection);
+
+            // Normalize to 0-359
+            if (next < 0) next += 360;
+            if (next >= 360) next -= 360;
+
+            // Check if we've crossed the end point
+            if (_scanDirection > 0)
+            {
+                // Moving forward
+                if (_scanStartAzimuth < _scanEndAzimuth)
+                {
+                    if (next > _scanEndAzimuth)
+                        return -1;
+                }
+                else
+                {
+                    // Range crosses 0/360
+                    if (_currentTargetAzimuth < _scanStartAzimuth && next > _scanEndAzimuth && next < _scanStartAzimuth)
+                        return -1;
+                }
+            }
+            else
+            {
+                // Moving backward
+                if (_scanStartAzimuth > _scanEndAzimuth)
+                {
+                    if (next < _scanEndAzimuth)
+                        return -1;
+                }
+                else
+                {
+                    // Range crosses 0/360
+                    if (_currentTargetAzimuth > _scanStartAzimuth && next < _scanEndAzimuth && next > _scanStartAzimuth)
+                        return -1;
+                }
+            }
+
+            return next;
+        }
+
+        private void HandleScanRangeEnd()
+        {
+            if (_scanPendulumMode)
+            {
+                // Pendulum mode: reverse direction
+                _scanDirection *= -1;
+                int temp = _scanStartAzimuth;
+                _scanStartAzimuth = _scanEndAzimuth;
+                _scanEndAzimuth = temp;
+
+                // Continue scanning from current position
+                int nextAzimuth = CalculateNextAzimuth();
+                if (nextAzimuth != -1)
+                {
+                    _currentTargetAzimuth = nextAzimuth;
+                    RotateToAzimuth(_currentTargetAzimuth);
+                }
+            }
+            else
+            {
+                // Return to start mode: go back to start position
+                _currentTargetAzimuth = _scanStartAzimuth;
+                RotateToAzimuth(_currentTargetAzimuth);
+            }
+        }
+
+        private void SendCommand(string command)
+        {
+            if (_useSimulator)
+            {
+                _simulator.Command = command;
+            }
+            else
+            {
+                _serial.Command = command;
+            }
+        }
+
+        private void OnSimulatorStateChanged(DeviceSimulator.SimulatorState state, string message)
+        {
+            if (InvokeRequired)
+            {
+                try
+                {
+                    Invoke(new Action<DeviceSimulator.SimulatorState, string>(OnSimulatorStateChanged), state, message);
+                }
+                catch (ObjectDisposedException)
+                {
+                    return;
+                }
+                return;
+            }
+
+            try
+            {
+                switch (state)
+                {
+                    case DeviceSimulator.SimulatorState.Connected:
+                        _isConnected = true;
+                        button1.Text = "Відключити";
+                        button1.Enabled = true;
+                        _refreshTimer?.Stop();
+                        _dataRequestTimer?.Start();
+                        groupBox1.Enabled = true;
+                        break;
+
+                    case DeviceSimulator.SimulatorState.Disconnected:
+                        _isConnected = false;
+                        button1.Text = "Підключити";
+                        button1.Enabled = true;
+                        _refreshTimer?.Start();
+                        _dataRequestTimer?.Stop();
+
+                        if (_isScanning)
+                        {
+                            StopScanning();
+                        }
+
+                        groupBox1.Enabled = false;
+                        LoadSerialPorts();
+                        break;
+
+                    case DeviceSimulator.SimulatorState.Error:
+                        _isConnected = false;
+                        button1.Text = "Підключити";
+                        button1.Enabled = true;
+                        _refreshTimer?.Start();
+                        _dataRequestTimer?.Stop();
+                        groupBox1.Enabled = false;
+                        LoadSerialPorts();
+                        break;
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in OnSimulatorStateChanged: {ex.Message}");
+            }
         }
     }
 }

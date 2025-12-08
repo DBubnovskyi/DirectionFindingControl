@@ -60,15 +60,41 @@
             numericUpDownAn = new NumericUpDown();
             richTextBox1 = new RichTextBox();
             groupBox4 = new GroupBox();
+            groupBox8 = new GroupBox();
+            radioButton2 = new RadioButton();
+            radioButton1 = new RadioButton();
+            buttonScan = new Button();
+            groupBox7 = new GroupBox();
+            numericScanTime = new NumericUpDown();
+            label19 = new Label();
+            label20 = new Label();
+            label21 = new Label();
+            numericScanStep = new NumericUpDown();
+            groupBox6 = new GroupBox();
+            numericAzScanEnd = new NumericUpDown();
+            label18 = new Label();
+            label17 = new Label();
+            label16 = new Label();
+            numericAzScanStart = new NumericUpDown();
             groupBox5 = new GroupBox();
-            label14 = new Label();
             label15 = new Label();
+            label14 = new Label();
+            label22 = new Label();
+            labelAN_AZ = new Label();
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDownAz).BeginInit();
             groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDownAn).BeginInit();
+            groupBox4.SuspendLayout();
+            groupBox8.SuspendLayout();
+            groupBox7.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numericScanTime).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericScanStep).BeginInit();
+            groupBox6.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numericAzScanEnd).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericAzScanStart).BeginInit();
             groupBox5.SuspendLayout();
             SuspendLayout();
             // 
@@ -173,7 +199,7 @@
             label8.Location = new Point(315, 41);
             label8.MaximumSize = new Size(150, 0);
             label8.Name = "label8";
-            label8.Size = new Size(140, 39);
+            label8.Size = new Size(139, 39);
             label8.TabIndex = 11;
             label8.Text = "Введення азимуту якому відповідє нульове полеження кута антени";
             // 
@@ -390,7 +416,7 @@
             richTextBox1.BackColor = SystemColors.WindowText;
             richTextBox1.Font = new Font("Consolas", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             richTextBox1.ForeColor = SystemColors.ButtonShadow;
-            richTextBox1.Location = new Point(12, 642);
+            richTextBox1.Location = new Point(12, 612);
             richTextBox1.Name = "richTextBox1";
             richTextBox1.ReadOnly = true;
             richTextBox1.Size = new Size(791, 146);
@@ -399,12 +425,182 @@
             // 
             // groupBox4
             // 
+            groupBox4.Controls.Add(groupBox8);
+            groupBox4.Controls.Add(groupBox7);
+            groupBox4.Controls.Add(groupBox6);
             groupBox4.Location = new Point(12, 442);
             groupBox4.Name = "groupBox4";
-            groupBox4.Size = new Size(791, 194);
+            groupBox4.Size = new Size(791, 164);
             groupBox4.TabIndex = 7;
             groupBox4.TabStop = false;
             groupBox4.Text = "Автоматичне сканування";
+            // 
+            // groupBox8
+            // 
+            groupBox8.Controls.Add(radioButton2);
+            groupBox8.Controls.Add(radioButton1);
+            groupBox8.Controls.Add(buttonScan);
+            groupBox8.Location = new Point(531, 22);
+            groupBox8.Name = "groupBox8";
+            groupBox8.Size = new Size(259, 131);
+            groupBox8.TabIndex = 23;
+            groupBox8.TabStop = false;
+            groupBox8.Text = "Керування";
+            // 
+            // radioButton2
+            // 
+            radioButton2.AutoSize = true;
+            radioButton2.Location = new Point(6, 47);
+            radioButton2.Name = "radioButton2";
+            radioButton2.Size = new Size(85, 19);
+            radioButton2.TabIndex = 5;
+            radioButton2.Text = "Циклічний";
+            radioButton2.UseVisualStyleBackColor = true;
+            // 
+            // radioButton1
+            // 
+            radioButton1.AutoSize = true;
+            radioButton1.Checked = true;
+            radioButton1.Location = new Point(6, 22);
+            radioButton1.Name = "radioButton1";
+            radioButton1.Size = new Size(122, 19);
+            radioButton1.TabIndex = 4;
+            radioButton1.TabStop = true;
+            radioButton1.Text = "Маятниковий рух";
+            radioButton1.UseVisualStyleBackColor = true;
+            // 
+            // buttonScan
+            // 
+            buttonScan.Location = new Point(6, 93);
+            buttonScan.Name = "buttonScan";
+            buttonScan.Size = new Size(246, 29);
+            buttonScan.TabIndex = 3;
+            buttonScan.Text = "Почати сканування";
+            buttonScan.UseVisualStyleBackColor = true;
+            // 
+            // groupBox7
+            // 
+            groupBox7.Controls.Add(numericScanTime);
+            groupBox7.Controls.Add(label19);
+            groupBox7.Controls.Add(label20);
+            groupBox7.Controls.Add(label21);
+            groupBox7.Controls.Add(numericScanStep);
+            groupBox7.Location = new Point(266, 22);
+            groupBox7.Name = "groupBox7";
+            groupBox7.Size = new Size(259, 131);
+            groupBox7.TabIndex = 22;
+            groupBox7.TabStop = false;
+            groupBox7.Text = "Параметри";
+            // 
+            // numericScanTime
+            // 
+            numericScanTime.Location = new Point(124, 80);
+            numericScanTime.Maximum = new decimal(new int[] { 60, 0, 0, 0 });
+            numericScanTime.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            numericScanTime.Name = "numericScanTime";
+            numericScanTime.Size = new Size(117, 23);
+            numericScanTime.TabIndex = 21;
+            numericScanTime.Value = new decimal(new int[] { 1, 0, 0, 0 });
+            // 
+            // label19
+            // 
+            label19.AutoSize = true;
+            label19.Location = new Point(6, 83);
+            label19.Name = "label19";
+            label19.Size = new Size(104, 15);
+            label19.TabIndex = 20;
+            label19.Text = "Час зупинки (сек)";
+            // 
+            // label20
+            // 
+            label20.AutoSize = true;
+            label20.Location = new Point(6, 54);
+            label20.Name = "label20";
+            label20.Size = new Size(100, 15);
+            label20.TabIndex = 19;
+            label20.Text = "Крок сканування";
+            // 
+            // label21
+            // 
+            label21.AutoSize = true;
+            label21.Font = new Font("Microsoft Sans Serif", 7.25F);
+            label21.Location = new Point(6, 19);
+            label21.MaximumSize = new Size(240, 0);
+            label21.Name = "label21";
+            label21.Size = new Size(225, 26);
+            label21.TabIndex = 19;
+            label21.Text = "Задає точки зупинки під час сканування для виміру";
+            // 
+            // numericScanStep
+            // 
+            numericScanStep.Location = new Point(124, 52);
+            numericScanStep.Maximum = new decimal(new int[] { 90, 0, 0, 0 });
+            numericScanStep.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            numericScanStep.Name = "numericScanStep";
+            numericScanStep.Size = new Size(117, 23);
+            numericScanStep.TabIndex = 3;
+            numericScanStep.Value = new decimal(new int[] { 1, 0, 0, 0 });
+            // 
+            // groupBox6
+            // 
+            groupBox6.Controls.Add(labelAN_AZ);
+            groupBox6.Controls.Add(label22);
+            groupBox6.Controls.Add(numericAzScanEnd);
+            groupBox6.Controls.Add(label18);
+            groupBox6.Controls.Add(label17);
+            groupBox6.Controls.Add(label16);
+            groupBox6.Controls.Add(numericAzScanStart);
+            groupBox6.Location = new Point(6, 22);
+            groupBox6.Name = "groupBox6";
+            groupBox6.Size = new Size(254, 131);
+            groupBox6.TabIndex = 0;
+            groupBox6.TabStop = false;
+            groupBox6.Text = "Сектор сканування";
+            // 
+            // numericAzScanEnd
+            // 
+            numericAzScanEnd.Location = new Point(124, 80);
+            numericAzScanEnd.Maximum = new decimal(new int[] { 359, 0, 0, 0 });
+            numericAzScanEnd.Name = "numericAzScanEnd";
+            numericAzScanEnd.Size = new Size(117, 23);
+            numericAzScanEnd.TabIndex = 21;
+            // 
+            // label18
+            // 
+            label18.AutoSize = true;
+            label18.Location = new Point(6, 83);
+            label18.Name = "label18";
+            label18.Size = new Size(101, 15);
+            label18.TabIndex = 20;
+            label18.Text = "Кунцевий азимут";
+            // 
+            // label17
+            // 
+            label17.AutoSize = true;
+            label17.Location = new Point(6, 52);
+            label17.Name = "label17";
+            label17.Size = new Size(106, 15);
+            label17.TabIndex = 19;
+            label17.Text = "Стартовий азимут";
+            // 
+            // label16
+            // 
+            label16.AutoSize = true;
+            label16.Font = new Font("Microsoft Sans Serif", 7.25F);
+            label16.Location = new Point(6, 19);
+            label16.MaximumSize = new Size(240, 0);
+            label16.Name = "label16";
+            label16.Size = new Size(235, 26);
+            label16.TabIndex = 19;
+            label16.Text = "Сектор в якому буде автоматично обертатись антена. Не може перетинати кут 180 градусів";
+            // 
+            // numericAzScanStart
+            // 
+            numericAzScanStart.Location = new Point(124, 50);
+            numericAzScanStart.Maximum = new decimal(new int[] { 359, 0, 0, 0 });
+            numericAzScanStart.Name = "numericAzScanStart";
+            numericAzScanStart.Size = new Size(117, 23);
+            numericAzScanStart.TabIndex = 3;
             // 
             // groupBox5
             // 
@@ -418,16 +614,6 @@
             groupBox5.TabStop = false;
             groupBox5.Text = "Параметри";
             // 
-            // label14
-            // 
-            label14.AutoSize = true;
-            label14.Font = new Font("Segoe UI", 12F);
-            label14.Location = new Point(6, 35);
-            label14.Name = "label14";
-            label14.Size = new Size(95, 21);
-            label14.TabIndex = 3;
-            label14.Text = "шивидкість:";
-            // 
             // label15
             // 
             label15.AutoSize = true;
@@ -438,11 +624,41 @@
             label15.TabIndex = 4;
             label15.Text = "0";
             // 
+            // label14
+            // 
+            label14.AutoSize = true;
+            label14.Font = new Font("Segoe UI", 12F);
+            label14.Location = new Point(6, 35);
+            label14.Name = "label14";
+            label14.Size = new Size(95, 21);
+            label14.TabIndex = 3;
+            label14.Text = "шивидкість:";
+            // 
+            // label22
+            // 
+            label22.AutoSize = true;
+            label22.ForeColor = Color.IndianRed;
+            label22.Location = new Point(6, 107);
+            label22.Name = "label22";
+            label22.Size = new Size(153, 15);
+            label22.TabIndex = 19;
+            label22.Text = "Азимут кута 180 градусів - ";
+            // 
+            // labelAN_AZ
+            // 
+            labelAN_AZ.AutoSize = true;
+            labelAN_AZ.ForeColor = Color.IndianRed;
+            labelAN_AZ.Location = new Point(153, 108);
+            labelAN_AZ.Name = "labelAN_AZ";
+            labelAN_AZ.Size = new Size(28, 15);
+            labelAN_AZ.TabIndex = 22;
+            labelAN_AZ.Text = "000 ";
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(818, 800);
+            ClientSize = new Size(813, 769);
             Controls.Add(groupBox5);
             Controls.Add(groupBox4);
             Controls.Add(richTextBox1);
@@ -464,6 +680,17 @@
             groupBox3.ResumeLayout(false);
             groupBox3.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDownAn).EndInit();
+            groupBox4.ResumeLayout(false);
+            groupBox8.ResumeLayout(false);
+            groupBox8.PerformLayout();
+            groupBox7.ResumeLayout(false);
+            groupBox7.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numericScanTime).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericScanStep).EndInit();
+            groupBox6.ResumeLayout(false);
+            groupBox6.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numericAzScanEnd).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericAzScanStart).EndInit();
             groupBox5.ResumeLayout(false);
             groupBox5.PerformLayout();
             ResumeLayout(false);
@@ -507,5 +734,23 @@
         private GroupBox groupBox5;
         private Label label14;
         private Label label15;
+        private GroupBox groupBox6;
+        private Label label16;
+        private NumericUpDown numericAzScanStart;
+        private Label label17;
+        private NumericUpDown numericAzScanEnd;
+        private Label label18;
+        private GroupBox groupBox7;
+        private NumericUpDown numericScanTime;
+        private Label label19;
+        private Label label20;
+        private Label label21;
+        private NumericUpDown numericScanStep;
+        private GroupBox groupBox8;
+        private Button buttonScan;
+        private RadioButton radioButton2;
+        private RadioButton radioButton1;
+        private Label label22;
+        private Label labelAN_AZ;
     }
 }

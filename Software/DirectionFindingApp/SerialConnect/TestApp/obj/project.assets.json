@@ -272,23 +272,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\dimab\\.nuget\\packages\\": {},
+    "C:\\Users\\d.bubnovskyi\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Projects\\DirectionFinding\\DirectionFindingControl\\Software\\DirectionFindingApp\\SerialConnect\\TestApp\\TestApp.csproj",
+      "projectUniqueName": "C:\\Users\\d.bubnovskyi\\Documents\\Projects\\Pet\\DirectionFinding\\Software\\DirectionFindingApp\\SerialConnect\\TestApp\\TestApp.csproj",
       "projectName": "TestApp",
-      "projectPath": "D:\\Projects\\DirectionFinding\\DirectionFindingControl\\Software\\DirectionFindingApp\\SerialConnect\\TestApp\\TestApp.csproj",
-      "packagesPath": "C:\\Users\\dimab\\.nuget\\packages\\",
-      "outputPath": "D:\\Projects\\DirectionFinding\\DirectionFindingControl\\Software\\DirectionFindingApp\\SerialConnect\\TestApp\\obj\\",
+      "projectPath": "C:\\Users\\d.bubnovskyi\\Documents\\Projects\\Pet\\DirectionFinding\\Software\\DirectionFindingApp\\SerialConnect\\TestApp\\TestApp.csproj",
+      "packagesPath": "C:\\Users\\d.bubnovskyi\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\d.bubnovskyi\\Documents\\Projects\\Pet\\DirectionFinding\\Software\\DirectionFindingApp\\SerialConnect\\TestApp\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\dimab\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\d.bubnovskyi\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -304,11 +304,11 @@
         "net8.0-windows7.0": {
           "targetAlias": "net8.0-windows",
           "projectReferences": {
-            "D:\\Projects\\DirectionFinding\\DirectionFindingControl\\Software\\DirectionFindingApp\\SerialConnect\\SerialConnect\\SerialConnect.csproj": {
-              "projectPath": "D:\\Projects\\DirectionFinding\\DirectionFindingControl\\Software\\DirectionFindingApp\\SerialConnect\\SerialConnect\\SerialConnect.csproj"
+            "C:\\Users\\d.bubnovskyi\\Documents\\Projects\\Pet\\DirectionFinding\\Software\\DirectionFindingApp\\SerialConnect\\SerialConnect\\SerialConnect.csproj": {
+              "projectPath": "C:\\Users\\d.bubnovskyi\\Documents\\Projects\\Pet\\DirectionFinding\\Software\\DirectionFindingApp\\SerialConnect\\SerialConnect\\SerialConnect.csproj"
             },
-            "D:\\Projects\\DirectionFinding\\DirectionFindingControl\\Software\\DirectionFindingApp\\SerialConnect\\SerialMonitor\\SerialMonitor.csproj": {
-              "projectPath": "D:\\Projects\\DirectionFinding\\DirectionFindingControl\\Software\\DirectionFindingApp\\SerialConnect\\SerialMonitor\\SerialMonitor.csproj"
+            "C:\\Users\\d.bubnovskyi\\Documents\\Projects\\Pet\\DirectionFinding\\Software\\DirectionFindingApp\\SerialConnect\\SerialMonitor\\SerialMonitor.csproj": {
+              "projectPath": "C:\\Users\\d.bubnovskyi\\Documents\\Projects\\Pet\\DirectionFinding\\Software\\DirectionFindingApp\\SerialConnect\\SerialMonitor\\SerialMonitor.csproj"
             }
           }
         }
@@ -322,8 +322,7 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "direct"
-      },
-      "SdkAnalysisLevel": "9.0.300"
+      }
     },
     "frameworks": {
       "net8.0-windows7.0": {
@@ -353,7 +352,7 @@
             "privateAssets": "none"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.400/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
