@@ -75,6 +75,16 @@ void SerialHandler::processRsResponce(const String &command)
         int angle = StringUtils::GetValue(command, 1);
         RotatorState::angle = angle;
     }
+    else if (command.startsWith("SP")) // Швидкість
+    {
+        int speed = StringUtils::GetValue(command, 1);
+        RotatorState::speed = speed;
+    }
+    else if (command.startsWith("RT")) // Обертання
+    {
+        int rotation = StringUtils::GetValue(command, 1);
+        RotatorState::isRotating = (rotation == 1);
+    }
     else if (command.startsWith("IN,1"))
     {
         _screenHandler->showScreen("init2");
@@ -103,17 +113,17 @@ void SerialHandler::handle()
     {
         String message = Serial.readStringUntil('\n');
 
-        Vector<String> words = StringUtils::Split(message, ';');
-        _responseBuffer = "";
-        for (const auto &word : words)
-        {
-            processPcCommand(word);
-        }
-        if (_responseBuffer.length() > 0)
-        {
-            SendResponse(_responseBuffer + '\n');
-        }
+        // Vector<String> words = StringUtils::Split(message, ';');
+        // _responseBuffer = "";
+        // for (const auto &word : words)
+        // {
+        //     processPcCommand(word);
+        // }
+        // if (_responseBuffer.length() > 0)
+        // {
+        //     SendResponse(_responseBuffer + '\n');
+        // }
 
-        sendRsSerial(message);
+        sendRsSerial(message + '\n');
     }
 }

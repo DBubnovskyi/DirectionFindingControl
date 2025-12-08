@@ -2,6 +2,10 @@
 
 float AngleController::SensorError = 0.0f;
 float AngleController::AzimuthOffset = 0.0f;
+float AngleController::Tolerance = 0.4f;
+float AngleController::MinSpeed = 140.0f;
+float AngleController::MaxSpeed = 255.0f;
+float AngleController::BreackAngle = 15.0f;
 
 AngleController::AngleController(DRV8871 &motor, MT6701 &sensor)
     : _motor(motor), _sensor(sensor), _targetAngle(0.0f), _currentSpeed(0.0f)
@@ -21,6 +25,39 @@ AngleController::AngleController(DRV8871 &motor, MT6701 &sensor)
         EEPROM.put(EEPROM_AZIMUTH_OFFSET_ADDR, AzimuthOffset);
         EEPROM.commit();
     }
+
+    // Завантаження параметрів руху
+    EEPROM.get(EEPROM_TOLERANCE_ADDR, Tolerance);
+    if (isnan(Tolerance) || Tolerance < 0.1f || Tolerance > 5.0f)
+    {
+        Tolerance = 0.4f;
+        EEPROM.put(EEPROM_TOLERANCE_ADDR, Tolerance);
+        EEPROM.commit();
+    }
+
+    EEPROM.get(EEPROM_MIN_SPEED_ADDR, MinSpeed);
+    if (isnan(MinSpeed) || MinSpeed < 0.0f || MinSpeed > 255.0f)
+    {
+        MinSpeed = 140.0f;
+        EEPROM.put(EEPROM_MIN_SPEED_ADDR, MinSpeed);
+        EEPROM.commit();
+    }
+
+    EEPROM.get(EEPROM_MAX_SPEED_ADDR, MaxSpeed);
+    if (isnan(MaxSpeed) || MaxSpeed < 0.0f || MaxSpeed > 255.0f)
+    {
+        MaxSpeed = 255.0f;
+        EEPROM.put(EEPROM_MAX_SPEED_ADDR, MaxSpeed);
+        EEPROM.commit();
+    }
+
+    EEPROM.get(EEPROM_BREACK_ANGLE_ADDR, BreackAngle);
+    if (isnan(BreackAngle) || BreackAngle < 1.0f || BreackAngle > 90.0f)
+    {
+        BreackAngle = 15.0f;
+        EEPROM.put(EEPROM_BREACK_ANGLE_ADDR, BreackAngle);
+        EEPROM.commit();
+    }
 }
 
 void AngleController::setSensorError(float value)
@@ -33,6 +70,67 @@ void AngleController::setSensorError(float value)
 float AngleController::getSensorError()
 {
     return SensorError;
+}
+
+// Параметри руху
+void AngleController::setTolerance(float value)
+{
+    if (value >= 0.1f && value <= 5.0f)
+    {
+        Tolerance = value;
+        EEPROM.put(EEPROM_TOLERANCE_ADDR, Tolerance);
+        EEPROM.commit();
+    }
+}
+
+float AngleController::getTolerance()
+{
+    return Tolerance;
+}
+
+void AngleController::setMinSpeed(float value)
+{
+    if (value >= 0.0f && value <= 255.0f)
+    {
+        MinSpeed = value;
+        EEPROM.put(EEPROM_MIN_SPEED_ADDR, MinSpeed);
+        EEPROM.commit();
+    }
+}
+
+float AngleController::getMinSpeed()
+{
+    return MinSpeed;
+}
+
+void AngleController::setMaxSpeed(float value)
+{
+    if (value >= 0.0f && value <= 255.0f)
+    {
+        MaxSpeed = value;
+        EEPROM.put(EEPROM_MAX_SPEED_ADDR, MaxSpeed);
+        EEPROM.commit();
+    }
+}
+
+float AngleController::getMaxSpeed()
+{
+    return MaxSpeed;
+}
+
+void AngleController::setBreackAngle(float value)
+{
+    if (value >= 1.0f && value <= 90.0f)
+    {
+        BreackAngle = value;
+        EEPROM.put(EEPROM_BREACK_ANGLE_ADDR, BreackAngle);
+        EEPROM.commit();
+    }
+}
+
+float AngleController::getBreackAngle()
+{
+    return BreackAngle;
 }
 
 float AngleController::getSensorAngle()

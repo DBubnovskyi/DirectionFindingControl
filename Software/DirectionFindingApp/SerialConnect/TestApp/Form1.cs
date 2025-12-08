@@ -1,5 +1,6 @@
 using SerialConnect;
 using SerialMonitor;
+using System.Collections.Concurrent;
 
 namespace TestApp
 {
@@ -11,12 +12,27 @@ namespace TestApp
         private System.Windows.Forms.Timer _refreshTimer = null!;
         private System.Windows.Forms.Timer _dataRequestTimer = null!;
         private System.Windows.Forms.Timer _scanWaitTimer = null!;
+        private System.Windows.Forms.Timer _rotationTimeoutTimer = null!;
+        private System.Windows.Forms.Timer _sendQueueTimer = null!;
+        private ConcurrentQueue<string> _sendQueue = new ConcurrentQueue<string>();
+        private int _sendIntervalMs = 200; // ms between consecutive TX commands
         private bool _isConnected = false;
+
+        // Data request backoff / non-response handling
+        private DateTime _lastRxTime = DateTime.MinValue;
+        private int _consecutiveNoResponseCount = 0;
+        private int _maxNoResponseBeforeBackoff = 3; // number of missed polls before backing off
+        private bool _isInDataBackoff = false;
+        private int _dataRequestIntervalNormal = 500; // ms
+        private int _dataRequestIntervalBackoff = 3000; // ms when backing off
+        private int _noResponseThresholdMs = 1500; // consider a miss if no RX within this ms
 
         // Scanning state
         private bool _isScanning = false;
         private bool _isWaitingForStop = false;
         private int _currentTargetAzimuth = 0;
+        private List<int> _scanTargets = new List<int>();
+        private int _scanIndex = 0;
         private int _scanStartAzimuth = 0;
         private int _scanEndAzimuth = 0;
         private int _scanStep = 0;
@@ -24,6 +40,9 @@ namespace TestApp
         private bool _scanPendulumMode = true;
         private int _currentSpeed = 0;
         private int _anAzValue = 0; // Азимут на якому знаходиться кут 180
+        private const int DefaultRotationSpeed = 30; // deg/sec used for timeout when unknown
+        private bool _rotationTimedOut = false;
+        private int _scanRetryIntervalMs = 300; // retry waiting for stop
 
         public Form1()
         {
@@ -34,6 +53,8 @@ namespace TestApp
             InitializeRefreshTimer();
             InitializeDataRequestTimer();
             InitializeScanTimer();
+            InitializeRotationTimeoutTimer();
+            InitializeSendQueueTimer();
         }
 
         private void InitializeUI()
@@ -99,6 +120,16 @@ namespace TestApp
             buttonScan.Click += ButtonScan_Click;
             labelAN_AZ.Text = "000";
 
+            // Initialize settings controls (numericUpDown4 for brake angle)
+            numericBreackAngle.DecimalPlaces = 1;
+            numericBreackAngle.Minimum = 1;
+            numericBreackAngle.Maximum = 90;
+            numericBreackAngle.Increment = 1;
+
+            // Connect settings buttons
+            buttonSettigsGet.Click += ButtonSettingsGet_Click;
+            buttonSettingsSet.Click += ButtonSettingsSet_Click;
+
             // Handle form closing
             this.FormClosing += Form1_FormClosing;
         }
@@ -143,6 +174,10 @@ namespace TestApp
                 _dataRequestTimer?.Dispose();
                 _scanWaitTimer?.Stop();
                 _scanWaitTimer?.Dispose();
+                _sendQueueTimer?.Stop();
+                _sendQueueTimer?.Dispose();
+                // clear pending queued commands
+                while (_sendQueue.TryDequeue(out _)) { }
 
                 if (_serial != null && _isConnected)
                 {
@@ -169,17 +204,32 @@ namespace TestApp
 
         private void InitializeRefreshTimer()
         {
-            //_refreshTimer = new System.Windows.Forms.Timer();
-            //_refreshTimer.Interval = 2000; // Refresh every 2 seconds
-            //_refreshTimer.Tick += RefreshTimer_Tick;
-            //_refreshTimer.Start();
+            _refreshTimer = new System.Windows.Forms.Timer();
+            _refreshTimer.Interval = 2000; // Refresh every 2 seconds
+            _refreshTimer.Tick += RefreshTimer_Tick;
+            _refreshTimer.Start();
         }
 
         private void InitializeDataRequestTimer()
         {
             _dataRequestTimer = new System.Windows.Forms.Timer();
-            _dataRequestTimer.Interval = 500; // Request data every 500ms (0.5 seconds)
+            _dataRequestTimer.Interval = _dataRequestIntervalNormal; // Request data every 500ms (0.5 seconds)
             _dataRequestTimer.Tick += DataRequestTimer_Tick;
+        }
+
+        private void InitializeRotationTimeoutTimer()
+        {
+            _rotationTimeoutTimer = new System.Windows.Forms.Timer();
+            // will be configured per-rotation when starting
+            _rotationTimeoutTimer.Tick += RotationTimeoutTimer_Tick;
+        }
+
+        private void InitializeSendQueueTimer()
+        {
+            _sendQueueTimer = new System.Windows.Forms.Timer();
+            _sendQueueTimer.Interval = _sendIntervalMs;
+            _sendQueueTimer.Tick += SendQueueTimer_Tick;
+            _sendQueueTimer.Start();
         }
 
 
@@ -207,12 +257,93 @@ namespace TestApp
             {
                 if (_isConnected && !this.IsDisposed)
                 {
-                    SendCommand("#AZ;#AN;#SP;#AN_AZ;");
+                    var now = DateTime.Now;
+
+                    // Check for recent responses
+                    if (_lastRxTime != DateTime.MinValue && (now - _lastRxTime).TotalMilliseconds > _noResponseThresholdMs)
+                    {
+                        _consecutiveNoResponseCount++;
+                    }
+                    else
+                    {
+                        _consecutiveNoResponseCount = 0;
+                    }
+
+                    // Enter backoff if we've missed a few polls
+                    if (!_isInDataBackoff && _consecutiveNoResponseCount >= _maxNoResponseBeforeBackoff)
+                    {
+                        _isInDataBackoff = true;
+                        try { _dataRequestTimer.Interval = _dataRequestIntervalBackoff; } catch { }
+                        Console.WriteLine($"DataRequest: entering backoff after {_consecutiveNoResponseCount} missed responses; interval={_dataRequestTimer.Interval}ms");
+                    }
+
+                    // If in backoff, we'll still send but less frequently (timer interval increased).
+                    // If you prefer to stop entirely while silent, we could `_dataRequestTimer.Stop()` here instead.
+                    SendCommand("#AZ;#AN;#SP;");
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in DataRequestTimer_Tick: {ex.Message}");
+            }
+        }
+
+        private void RotationTimeoutTimer_Tick(object? sender, EventArgs e)
+        {
+            try
+            {
+                // Timeout: device didn't report stop in time
+                _rotationTimeoutTimer?.Stop();
+                _rotationTimedOut = true;
+                Console.WriteLine("Rotation timeout triggered - device did not report stop. Will wait for SP==0 before advancing.");
+                // Do NOT call OnRotationStopped here - we must wait for a confirmed SP==0
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in RotationTimeoutTimer_Tick: {ex.Message}");
+            }
+        }
+
+        private void SendQueueTimer_Tick(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (_sendQueue.TryDequeue(out var cmd))
+                {
+                    string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+                    string log = $"[{timestamp}] TX: {cmd}\n";
+                    try
+                    {
+                        if (_useSimulator)
+                        {
+                            _simulator.Command = cmd;
+                        }
+                        else
+                        {
+                            _serial.Command = cmd;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error sending command: {ex.Message}");
+                    }
+
+                    // Log TX to console and UI
+                    Console.WriteLine(log.TrimEnd());
+                    try
+                    {
+                        if (!richTextBox1.IsDisposed && !this.IsDisposed)
+                        {
+                            richTextBox1.AppendText(log);
+                            richTextBox1.ScrollToCaret();
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in SendQueueTimer_Tick: {ex.Message}");
             }
         }
 
@@ -296,6 +427,16 @@ namespace TestApp
                 richTextBox1.AppendText(logMessage);
                 richTextBox1.ScrollToCaret();
 
+                // Update last-received time and clear any data-request backoff state
+                _lastRxTime = DateTime.Now;
+                _consecutiveNoResponseCount = 0;
+                if (_isInDataBackoff)
+                {
+                    _isInDataBackoff = false;
+                    try { _dataRequestTimer.Interval = _dataRequestIntervalNormal; } catch { }
+                    Console.WriteLine("DataRequest: responses resumed, exiting backoff; interval restored.");
+                }
+
                 // Keep only last 1000 lines
                 var lines = richTextBox1.Lines;
                 if (lines.Length > 1000)
@@ -310,6 +451,9 @@ namespace TestApp
                 // Split by semicolon to handle multiple commands in one message
                 string[] parts = cleanMessage.Split(';', StringSplitOptions.RemoveEmptyEntries);
 
+                int? receivedAz = null;
+                int? receivedAn = null;
+
                 foreach (string part in parts)
                 {
                     string trimmedPart = part.Trim();
@@ -317,43 +461,88 @@ namespace TestApp
                     if (trimmedPart.StartsWith("AZ,"))
                     {
                         string angleStr = trimmedPart.Substring(3).Trim();
-                        if (int.TryParse(angleStr, out int azimuth))
+                        if (float.TryParse(angleStr, System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo.InvariantCulture, out float azimuthFloat))
                         {
-                            label12.Text = azimuth.ToString("000");
+                            int azimuth = (int)Math.Round(azimuthFloat);
+                            receivedAz = azimuth;
+                            label12.Text = azimuthFloat.ToString("000.0");
                         }
                     }
                     else if (trimmedPart.StartsWith("AN,"))
                     {
                         string angleStr = trimmedPart.Substring(3).Trim();
-                        if (int.TryParse(angleStr, out int angle))
+                        if (float.TryParse(angleStr, System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo.InvariantCulture, out float angleFloat))
                         {
-                            label13.Text = angle.ToString("000");
+                            int angle = (int)Math.Round(angleFloat);
+                            receivedAn = angle;
+                            label13.Text = angleFloat.ToString("000.0");
                         }
                     }
                     else if (trimmedPart.StartsWith("SP,"))
                     {
                         string speedStr = trimmedPart.Substring(3).Trim();
-                        if (int.TryParse(speedStr, out int speed))
+                        if (float.TryParse(speedStr, System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo.InvariantCulture, out float speedFloat))
                         {
+                            int speed = (int)Math.Round(speedFloat);
                             _currentSpeed = speed;
-                            label14.Text = speed.ToString("000");
+                            label15.Text = speed.ToString("000");
 
                             // Check if rotation stopped during scanning
                             if (_isScanning && _isWaitingForStop && speed == 0)
                             {
+                                // stop rotation timeout and handle stopped
+                                try { _rotationTimeoutTimer?.Stop(); } catch { }
                                 OnRotationStopped();
                             }
                         }
                     }
-                    else if (trimmedPart.StartsWith("AN_AZ,"))
+                    else if (trimmedPart.StartsWith("TOL,"))
                     {
-                        string anAzStr = trimmedPart.Substring(6).Trim();
-                        if (int.TryParse(anAzStr, out int anAz))
+                        string tolStr = trimmedPart.Substring(4).Trim();
+                        if (float.TryParse(tolStr, System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo.InvariantCulture, out float tol))
                         {
-                            _anAzValue = anAz;
-                            labelAN_AZ.Text = anAz.ToString("000");
+                            numericTolerance.Value = (decimal)Math.Max(0.1f, Math.Min(5.0f, tol));
                         }
                     }
+                    else if (trimmedPart.StartsWith("MINS,"))
+                    {
+                        string minsStr = trimmedPart.Substring(5).Trim();
+                        if (int.TryParse(minsStr, out int mins))
+                        {
+                            numericMinSpeed.Value = Math.Max(0, Math.Min(255, mins));
+                        }
+                    }
+                    else if (trimmedPart.StartsWith("MAXS,"))
+                    {
+                        string maxsStr = trimmedPart.Substring(5).Trim();
+                        if (int.TryParse(maxsStr, out int maxs))
+                        {
+                            numericMaxSpeed.Value = Math.Max(0, Math.Min(255, maxs));
+                        }
+                    }
+                    else if (trimmedPart.StartsWith("BRK,"))
+                    {
+                        string brkStr = trimmedPart.Substring(4).Trim();
+                        if (float.TryParse(brkStr, System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo.InvariantCulture, out float brk))
+                        {
+                            numericBreackAngle.Value = (decimal)Math.Max(1.0f, Math.Min(90.0f, brk));
+                        }
+                    }
+                }
+
+                // Calculate AN_AZ from received AZ and AN values
+                // AN_AZ is the azimuth where the antenna angle is 180 degrees
+                if (receivedAz.HasValue && receivedAn.HasValue)
+                {
+                    // AN_AZ = AZ - AN + 180
+                    int calculatedAnAz = (receivedAz.Value - receivedAn.Value + 180 + 360) % 360;
+                    _anAzValue = calculatedAnAz;
+                    labelAN_AZ.Text = calculatedAnAz.ToString("000");
                 }
             }
             catch (Exception ex)
@@ -634,6 +823,13 @@ namespace TestApp
             _scanStartAzimuth = (int)numericAzScanStart.Value;
             _scanEndAzimuth = (int)numericAzScanEnd.Value;
             _scanStep = (int)numericScanStep.Value;
+            // Build scan target list before starting to avoid relying on live sensor values
+            _scanTargets = GenerateScanTargets(_scanStartAzimuth, _scanEndAzimuth, _scanStep, _scanPendulumMode);
+            if (_scanTargets == null || _scanTargets.Count == 0)
+            {
+                MessageBox.Show("Не вдалося сформувати масив точок сканування", "Помилка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
             if (_scanStartAzimuth == _scanEndAzimuth)
             {
@@ -643,8 +839,8 @@ namespace TestApp
             }
 
             _isScanning = true;
-            _currentTargetAzimuth = _scanStartAzimuth;
-            _scanDirection = DetermineScanDirection(_scanStartAzimuth, _scanEndAzimuth);
+            _scanIndex = 0;
+            _currentTargetAzimuth = _scanTargets[_scanIndex];
 
             // Update UI
             buttonScan.Text = "Зупинити сканування";
@@ -658,7 +854,9 @@ namespace TestApp
             radioButton1.Enabled = false;
             radioButton2.Enabled = false;
             btnAz.Enabled = false;
+            btnAn.Enabled = false;
             numericUpDownAz.Enabled = false;
+            numericUpDownAn.Enabled = false;
 
             // Start rotation to first position
             RotateToAzimuth(_currentTargetAzimuth);
@@ -669,6 +867,8 @@ namespace TestApp
             _isScanning = false;
             _isWaitingForStop = false;
             _scanWaitTimer?.Stop();
+            _scanTargets?.Clear();
+            _scanIndex = 0;
 
             // Update UI
             buttonScan.Text = "Почати сканування";
@@ -683,27 +883,155 @@ namespace TestApp
             radioButton1.Enabled = true;
             radioButton2.Enabled = true;
             btnAz.Enabled = true;
+            btnAn.Enabled = true;
             numericUpDownAz.Enabled = true;
+            numericUpDownAn.Enabled = true;
         }
 
-        private int DetermineScanDirection(int start, int end)
+        private int DetermineScanDirection(int start, int end, int anAz)
         {
-            // Determine shortest rotation direction
-            int diff = end - start;
-            if (diff < 0) diff += 360;
+            // Check if the shorter arc (direct path) crosses AN_AZ (180° forbidden zone)
+            int shortDiff = end - start;
+            if (shortDiff < 0) shortDiff += 360;
+            
+            bool shortestIsForward = shortDiff <= 180;
+            
+            // Check if short path crosses AN_AZ
+            bool shortPathCrossesAnAz = false;
+            if (shortestIsForward)
+            {
+                // Forward: from start to end
+                if (start < end)
+                {
+                    // Simple case: start < end, check if anAz is between
+                    shortPathCrossesAnAz = (anAz > start && anAz < end);
+                }
+                else
+                {
+                    // Wraps around 0: start=350, end=10
+                    shortPathCrossesAnAz = (anAz > start || anAz < end);
+                }
+            }
+            else
+            {
+                // Backward: from start to end going backwards
+                if (start > end)
+                {
+                    // Simple case: start > end, going backwards
+                    shortPathCrossesAnAz = (anAz < start && anAz > end);
+                }
+                else
+                {
+                    // Wraps around 0 backwards: start=10, end=350
+                    shortPathCrossesAnAz = (anAz < start || anAz > end);
+                }
+            }
+            
+            // If short path crosses AN_AZ, we must go the long way
+            if (shortPathCrossesAnAz)
+            {
+                // Reverse direction to take the long path
+                return shortestIsForward ? -1 : 1;
+            }
+            
+            // Otherwise use the shortest path
+            return shortestIsForward ? 1 : -1;
+        }
 
-            return diff <= 180 ? 1 : -1;
+        private List<int> GenerateScanTargets(int start, int end, int step, bool pendulum)
+        {
+            var list = new List<int>();
+            if (step <= 0) step = 1;
+
+            int dir = DetermineScanDirection(start, end, _anAzValue);
+
+            // Build forward or backward base sequence from start to end inclusive
+            int current = start;
+            list.Add(current);
+            if (current != end)
+            {
+                while (true)
+                {
+                    if (dir > 0)
+                    {
+                        int distToEnd = (end - current + 360) % 360;
+                        if (distToEnd == 0) break;
+                        if (step >= distToEnd)
+                        {
+                            list.Add(end);
+                            break;
+                        }
+                        current = (current + step) % 360;
+                        list.Add(current);
+                    }
+                    else
+                    {
+                        int distToEnd = (current - end + 360) % 360;
+                        if (distToEnd == 0) break;
+                        if (step >= distToEnd)
+                        {
+                            list.Add(end);
+                            break;
+                        }
+                        current = (current - step) % 360;
+                        if (current < 0) current += 360;
+                        list.Add(current);
+                    }
+                }
+            }
+
+            if (pendulum)
+            {
+                // append reversed sequence excluding the last element to avoid duplicate end
+                if (list.Count > 1)
+                {
+                    var rev = new List<int>(list);
+                    rev.RemoveAt(rev.Count - 1);
+                    rev.Reverse();
+                    list.AddRange(rev);
+                }
+            }
+            else
+            {
+                // return-to-start mode: append start so sequence returns
+                if (list.Count > 0 && list[list.Count - 1] != start)
+                {
+                    list.Add(start);
+                }
+            }
+
+            return list;
         }
 
         private void RotateToAzimuth(int azimuth)
         {
             _isWaitingForStop = true;
             SendCommand($"$AZ,{azimuth};");
+
+            // Start rotation timeout based on estimated rotation duration
+            try
+            {
+                int fromAz = _currentTargetAzimuth;
+                int toAz = azimuth;
+                int diff = Math.Abs(((toAz - fromAz) + 540) % 360 - 180); // minimal angular difference
+                int speed = _currentSpeed > 0 ? _currentSpeed : DefaultRotationSpeed;
+                int timeoutMs = Math.Max(2000, (int)(diff / (double)speed * 1000.0) + 1500);
+                _rotationTimeoutTimer.Interval = timeoutMs;
+                _rotationTimeoutTimer.Start();
+                Console.WriteLine($"Rotation timeout set to {timeoutMs} ms (diff {diff} deg, speed {speed})");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error scheduling rotation timeout: {ex.Message}");
+            }
         }
 
         private void OnRotationStopped()
         {
             _isWaitingForStop = false;
+
+            // Clear timeout flag on confirmed stop
+            _rotationTimedOut = false;
 
             if (!_isScanning)
             {
@@ -725,62 +1053,63 @@ namespace TestApp
                 return;
             }
 
-            // Calculate next azimuth
-            int nextAzimuth = CalculateNextAzimuth();
+            // Only advance when we have a confirmed stop (speed == 0)
+            if (_currentSpeed != 0)
+            {
+                // Not stopped yet - wait a short retry interval and check again
+                Console.WriteLine($"ScanWait: waiting for stop, current speed={_currentSpeed}. Retrying in {_scanRetryIntervalMs}ms");
+                _scanWaitTimer.Interval = _scanRetryIntervalMs;
+                _scanWaitTimer.Start();
+                return;
+            }
 
-            if (nextAzimuth == -1)
+            // Advance index in precomputed target list
+            _scanIndex++;
+            if (_scanIndex >= _scanTargets.Count)
             {
-                // Reached end of scan range
-                HandleScanRangeEnd();
+                // wrap around to continue scanning
+                _scanIndex = 0;
             }
-            else
-            {
-                _currentTargetAzimuth = nextAzimuth;
-                RotateToAzimuth(_currentTargetAzimuth);
-            }
+
+            _currentTargetAzimuth = _scanTargets[_scanIndex];
+            RotateToAzimuth(_currentTargetAzimuth);
         }
 
         private int CalculateNextAzimuth()
         {
-            int next = _currentTargetAzimuth + (_scanStep * _scanDirection);
-
-            // Normalize to 0-359
-            if (next < 0) next += 360;
-            if (next >= 360) next -= 360;
-
-            // Check if we've crossed the end point
+            // Determine next target by moving _scanStep toward _scanEndAzimuth in _scanDirection
+            // This computes remaining distance to end along the chosen direction and clamps to end.
             if (_scanDirection > 0)
             {
-                // Moving forward
-                if (_scanStartAzimuth < _scanEndAzimuth)
+                // Forward direction: distance from current to end
+                int distToEnd = (_scanEndAzimuth - _currentTargetAzimuth + 360) % 360;
+                if (distToEnd == 0) return -1; // already at end
+                if (_scanStep >= distToEnd)
                 {
-                    if (next > _scanEndAzimuth)
-                        return -1;
+                    return _scanEndAzimuth;
                 }
                 else
                 {
-                    // Range crosses 0/360
-                    if (_currentTargetAzimuth < _scanStartAzimuth && next > _scanEndAzimuth && next < _scanStartAzimuth)
-                        return -1;
+                    int next = (_currentTargetAzimuth + _scanStep) % 360;
+                    return next;
                 }
             }
             else
             {
-                // Moving backward
-                if (_scanStartAzimuth > _scanEndAzimuth)
+                // Backward direction: distance from current to end going negative
+                int distToEnd = (_currentTargetAzimuth - _scanEndAzimuth + 360) % 360;
+                if (distToEnd == 0) return -1; // already at end
+                if (_scanStep >= distToEnd)
                 {
-                    if (next < _scanEndAzimuth)
-                        return -1;
+                    return _scanEndAzimuth;
                 }
                 else
                 {
-                    // Range crosses 0/360
-                    if (_currentTargetAzimuth > _scanStartAzimuth && next < _scanEndAzimuth && next > _scanStartAzimuth)
-                        return -1;
+                    int next = (_currentTargetAzimuth - _scanStep) % 360;
+                    if (next < 0) next += 360;
+                    return next;
                 }
             }
-
-            return next;
         }
 
         private void HandleScanRangeEnd()
@@ -811,13 +1140,31 @@ namespace TestApp
 
         private void SendCommand(string command)
         {
-            if (_useSimulator)
+            // Enqueue command for paced sending to avoid bursts and ensure stable intervals
+            if (string.IsNullOrWhiteSpace(command)) return;
+            _sendQueue.Enqueue(command);
+            Console.WriteLine($"[ENQUEUE] {DateTime.Now:HH:mm:ss.fff} {command}");
+        }
+
+        private void ButtonSettingsGet_Click(object? sender, EventArgs e)
+        {
+            if (_isConnected)
             {
-                _simulator.Command = command;
+                SendCommand("#TOL;#MINS;#MAXS;#BRK;");
             }
-            else
+        }
+
+        private void ButtonSettingsSet_Click(object? sender, EventArgs e)
+        {
+            if (_isConnected)
             {
-                _serial.Command = command;
+                // Send settings with InvariantCulture to ensure decimal point format
+                string tol = ((float)numericTolerance.Value).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+                int mins = (int)numericMinSpeed.Value;
+                int maxs = (int)numericMaxSpeed.Value;
+                string brk = ((float)numericBreackAngle.Value).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+
+                SendCommand($"$TOL,{tol};$MINS,{mins};$MAXS,{maxs};$BRK,{brk};");
             }
         }
 
@@ -883,6 +1230,11 @@ namespace TestApp
             {
                 Console.WriteLine($"Error in OnSimulatorStateChanged: {ex.Message}");
             }
+        }
+
+        private void label24_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

@@ -20,6 +20,9 @@
 // Налаштування RS485
 #define RX_PIN 2
 #define TX_PIN 3
+// DE/RE контроль (високий = TX, низький = RX)
+// Встановіть -1 якщо ваш RS485 модуль має автоматичне керування DE/RE
+#define RS485_DE_PIN 4
 HardwareSerial RS485Serial(1);
 
 ESP32LED led;
@@ -37,10 +40,16 @@ void setup()
 
   controller = new AngleController(motorController, angleSensor);
 
+  // Налаштування RS485 DE/RE (тільки якщо потрібен ручний контроль)
+  #if RS485_DE_PIN >= 0
+    pinMode(RS485_DE_PIN, OUTPUT);
+    digitalWrite(RS485_DE_PIN, LOW); // Режим прийому за замовчуванням
+  #endif
+
   RS485Serial.begin(9600, SERIAL_8N1, RX_PIN, TX_PIN);
   Serial.begin(115200);
   // SerialProcessor приймає будь-який Stream об'єкт Serial чи HardwareSerial
-  serialProc = new SerialProcessor(*controller, angleSensor, RS485Serial, led);
+  serialProc = new SerialProcessor(*controller, angleSensor, RS485Serial, led, RS485_DE_PIN);
 
   serialProc->begin();
   motorController.begin(IN1_PIN, IN2_PIN); // (IN1, IN2)

@@ -1,7 +1,7 @@
 #include "SerialProcessor.h"
 
-SerialProcessor::SerialProcessor(AngleController &controller, MT6701 &sensor, Stream &serial, ESP32LED &led)
-    : _controller(controller), _sensor(sensor), _serial(serial), _led(led)
+SerialProcessor::SerialProcessor(AngleController &controller, MT6701 &sensor, Stream &serial, ESP32LED &led, int dePin)
+    : _controller(controller), _sensor(sensor), _serial(serial), _led(led), _dePin(dePin)
 {
 }
 
@@ -62,7 +62,21 @@ int SerialProcessor::GetValue(const String &command, int index)
 
 void SerialProcessor::SendResponse(const String &response)
 {
+    // Увімкнення режиму передачі (якщо DE/RE контролюється)
+    if (_dePin >= 0)
+    {
+        digitalWrite(_dePin, HIGH);
+    }
+    
     _serial.write(response.c_str());
+    
+    // Якщо використовуємо DE/RE, чекаємо завершення передачі
+    if (_dePin >= 0)
+    {
+        _serial.flush(); // Чекаємо тільки якщо контролюємо DE/RE
+        digitalWrite(_dePin, LOW);
+    }
+    // Інакше UART відправить дані в фоні
 }
 
 void SerialProcessor::AddToResponseBuffer(const String &response)
@@ -83,14 +97,14 @@ void SerialProcessor::processCommand(const String &command)
         }
         else if (command == "#AN") // GET ANGLE
         {
-            int angle = _controller.getSensorAngle();
-            AddToResponseBuffer("AN," + String(angle));
+            float angle = _controller.getSensorAngle();
+            AddToResponseBuffer("AN," + String(angle, 1));
         }
         else if (command == "#AZ") // GET AZIMUTH
         {
             float angle = _controller.getSensorAngle();
             float azimuth = _controller.angleToAzimuth(angle);
-            AddToResponseBuffer("AZ," + String((int)azimuth));
+            AddToResponseBuffer("AZ," + String(azimuth, 1));
         }
         else if (command == "#ER") // GET SENSOR ERROR
         {
@@ -119,6 +133,26 @@ void SerialProcessor::processCommand(const String &command)
         {
             float speed = _controller.getCurrentSpeed();
             AddToResponseBuffer("SP," + String((int)speed));
+        }
+        else if (command == "#TOL") // GET TOLERANCE
+        {
+            float tolerance = _controller.getTolerance();
+            AddToResponseBuffer("TOL," + String(tolerance, 1));
+        }
+        else if (command == "#MINS") // GET MIN SPEED
+        {
+            float minSpeed = _controller.getMinSpeed();
+            AddToResponseBuffer("MINS," + String((int)minSpeed));
+        }
+        else if (command == "#MAXS") // GET MAX SPEED
+        {
+            float maxSpeed = _controller.getMaxSpeed();
+            AddToResponseBuffer("MAXS," + String((int)maxSpeed));
+        }
+        else if (command == "#BRK") // GET BREACK ANGLE
+        {
+            float breackAngle = _controller.getBreackAngle();
+            AddToResponseBuffer("BRK," + String(breackAngle, 1));
         }
         return;
     }
@@ -216,6 +250,32 @@ void SerialProcessor::processCommand(const String &command)
             {
                 _controller.disableMovement();
             }
+            else if (command.startsWith("$TOL,")) // SET TOLERANCE
+            {
+                String value = command.substring(5);
+                float tolerance = value.toFloat();
+                _controller.setTolerance(tolerance);
+                AddToResponseBuffer("TOL," + String(tolerance, 1));
+            }
+            else if (command.startsWith("$MINS,")) // SET MIN SPEED
+            {
+                int minSpeed = GetValue(command, 1);
+                _controller.setMinSpeed(minSpeed);
+                AddToResponseBuffer("MINS," + String(minSpeed));
+            }
+            else if (command.startsWith("$MAXS,")) // SET MAX SPEED
+            {
+                int maxSpeed = GetValue(command, 1);
+                _controller.setMaxSpeed(maxSpeed);
+                AddToResponseBuffer("MAXS," + String(maxSpeed));
+            }
+            else if (command.startsWith("$BRK,")) // SET BREACK ANGLE
+            {
+                String value = command.substring(5);
+                float breackAngle = value.toFloat();
+                _controller.setBreackAngle(breackAngle);
+                AddToResponseBuffer("BRK," + String(breackAngle, 1));
+            }
             return;
         }
     }
@@ -225,17 +285,20 @@ void SerialProcessor::handleSerialCommands()
 {
     static bool wasRotating = false;
     static unsigned long lastStatusTime = 0;
+    static unsigned long lastCommandTime = 0;
     
     bool isRotating = _controller.isRotating();
     unsigned long currentTime = millis();
 
-    // Відправка статусу обертання
-    if (isRotating && (currentTime - lastStatusTime >= 100))
+    // Відправка статусу обертання (тільки якщо не було команд останні 500мс)
+    bool canSendStatus = (currentTime - lastCommandTime) > 500;
+    
+    if (isRotating && canSendStatus && (currentTime - lastStatusTime >= 200))
     {
         sendRotationStatus();
         lastStatusTime = currentTime;
     }
-    else if (wasRotating && !isRotating)
+    else if (wasRotating && !isRotating && canSendStatus)
     {
         sendRotationStatus();
     }
@@ -250,31 +313,94 @@ void SerialProcessor::handleSerialCommands()
 
     wasRotating = isRotating;
 
-    // Обробка вхідних команд
+    // Обробка вхідних команд (неблокуюче читання)
     _led.off();
-
-    while (_serial.available() > 0)
+    
+    int bytesProcessed = 0;
+    bool commandReceived = false;
+    
+    while (_serial.available() > 0 && bytesProcessed < 128)
     {
-        _led.on(); // Засвічуємо діод під час читання
-
-        String message = _serial.readStringUntil('\n');
-
-        Vector<String> words = Split(message, ';');
-
-        _responseBuffer = "";
-
-        for (const auto &word : words)
+        char c = (char)_serial.read();
+        bytesProcessed++;
+        
+        // Ігнорувати непечатні символи (крім \n, \r, ;)
+        if ((c >= 32 && c <= 126) || c == '\n' || c == '\r' || c == ';')
         {
-            processCommand(word);
+            // Завершення повідомлення
+            if (c == '\n')
+            {
+                // Обробляємо останню команду в буфері
+                if (_inputBuffer.length() > 0)
+                {
+                    if (isValidCommand(_inputBuffer))
+                    {
+                        processCommand(_inputBuffer);
+                    }
+                    _inputBuffer = "";
+                }
+                
+                // Відправляємо всю накопичену відповідь
+                if (_responseBuffer.length() > 0)
+                {
+                    _led.on();
+                    SendResponse(_responseBuffer + '\n');
+                    _responseBuffer = "";
+                    _led.off();
+                }
+                
+                commandReceived = true;
+            }
+            // Роздільник команд
+            else if (c == ';')
+            {
+                if (_inputBuffer.length() > 0)
+                {
+                    if (isValidCommand(_inputBuffer))
+                    {
+                        processCommand(_inputBuffer);
+                    }
+                    _inputBuffer = "";
+                }
+            }
+            else if (c != '\r') // Ігнорувати \r
+            {
+                _inputBuffer += c;
+            }
         }
-
-        if (_responseBuffer.length() > 0)
+        
+        // Захист від переповнення буфера
+        if (_inputBuffer.length() > 256)
         {
-            SendResponse(_responseBuffer + '\n');
+            _inputBuffer = "";
         }
-
-        _led.off(); // Вимикаємо діод після обробки
     }
+    
+    // Оновлюємо час останньої команди
+    if (commandReceived)
+    {
+        lastCommandTime = currentTime;
+    }
+}
+
+bool SerialProcessor::isValidCommand(const String &cmd)
+{
+    // Перевірка що команда починається з # або $
+    if (cmd.length() < 2) return false;
+    if (cmd[0] != '#' && cmd[0] != '$') return false;
+    
+    // Перевірка що команда містить тільки допустимі символи
+    for (unsigned int i = 0; i < cmd.length(); i++)
+    {
+        char c = cmd[i];
+        if (!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || 
+              c == '_' || c == ',' || c == '-' || c == '#' || c == '$' || c == '.'))
+        {
+            return false;
+        }
+    }
+    
+    return true;
 }
 
 void SerialProcessor::sendRotationStatus()
@@ -284,6 +410,6 @@ void SerialProcessor::sendRotationStatus()
     float azimuth = _controller.angleToAzimuth(angle);
     int rotatingStatus = _controller.isRotating() ? 1 : 0;
     
-    String status = "SP," + String(speed) + ";AZ," + String((int)azimuth) + ";AN," + String((int)angle) + ";RT," + String(rotatingStatus) + ";\n";
+    String status = "SP," + String(speed) + ";AZ," + String(azimuth, 1) + ";AN," + String(angle, 1) + ";RT," + String(rotatingStatus) + ";\n";
     SendResponse(status);
 }

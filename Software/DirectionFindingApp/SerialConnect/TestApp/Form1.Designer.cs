@@ -71,16 +71,26 @@
             label21 = new Label();
             numericScanStep = new NumericUpDown();
             groupBox6 = new GroupBox();
+            labelAN_AZ = new Label();
+            label22 = new Label();
             numericAzScanEnd = new NumericUpDown();
             label18 = new Label();
             label17 = new Label();
             label16 = new Label();
             numericAzScanStart = new NumericUpDown();
             groupBox5 = new GroupBox();
+            buttonSettingsSet = new Button();
+            label26 = new Label();
+            numericBreackAngle = new NumericUpDown();
+            label25 = new Label();
+            numericMaxSpeed = new NumericUpDown();
+            label24 = new Label();
+            numericMinSpeed = new NumericUpDown();
+            label23 = new Label();
+            numericTolerance = new NumericUpDown();
             label15 = new Label();
             label14 = new Label();
-            label22 = new Label();
-            labelAN_AZ = new Label();
+            buttonSettigsGet = new Button();
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             groupBox2.SuspendLayout();
@@ -96,6 +106,10 @@
             ((System.ComponentModel.ISupportInitialize)numericAzScanEnd).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericAzScanStart).BeginInit();
             groupBox5.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numericBreackAngle).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericMaxSpeed).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericMinSpeed).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numericTolerance).BeginInit();
             SuspendLayout();
             // 
             // groupBox1
@@ -199,7 +213,7 @@
             label8.Location = new Point(315, 41);
             label8.MaximumSize = new Size(150, 0);
             label8.Name = "label8";
-            label8.Size = new Size(139, 39);
+            label8.Size = new Size(140, 39);
             label8.TabIndex = 11;
             label8.Text = "Введення азимуту якому відповідє нульове полеження кута антени";
             // 
@@ -463,7 +477,7 @@
             radioButton1.Checked = true;
             radioButton1.Location = new Point(6, 22);
             radioButton1.Name = "radioButton1";
-            radioButton1.Size = new Size(122, 19);
+            radioButton1.Size = new Size(121, 19);
             radioButton1.TabIndex = 4;
             radioButton1.TabStop = true;
             radioButton1.Text = "Маятниковий рух";
@@ -557,6 +571,26 @@
             groupBox6.TabStop = false;
             groupBox6.Text = "Сектор сканування";
             // 
+            // labelAN_AZ
+            // 
+            labelAN_AZ.AutoSize = true;
+            labelAN_AZ.ForeColor = Color.IndianRed;
+            labelAN_AZ.Location = new Point(153, 108);
+            labelAN_AZ.Name = "labelAN_AZ";
+            labelAN_AZ.Size = new Size(28, 15);
+            labelAN_AZ.TabIndex = 22;
+            labelAN_AZ.Text = "000 ";
+            // 
+            // label22
+            // 
+            label22.AutoSize = true;
+            label22.ForeColor = Color.IndianRed;
+            label22.Location = new Point(6, 107);
+            label22.Name = "label22";
+            label22.Size = new Size(153, 15);
+            label22.TabIndex = 19;
+            label22.Text = "Азимут кута 180 градусів - ";
+            // 
             // numericAzScanEnd
             // 
             numericAzScanEnd.Location = new Point(124, 80);
@@ -604,6 +638,16 @@
             // 
             // groupBox5
             // 
+            groupBox5.Controls.Add(buttonSettigsGet);
+            groupBox5.Controls.Add(buttonSettingsSet);
+            groupBox5.Controls.Add(label26);
+            groupBox5.Controls.Add(numericBreackAngle);
+            groupBox5.Controls.Add(label25);
+            groupBox5.Controls.Add(numericMaxSpeed);
+            groupBox5.Controls.Add(label24);
+            groupBox5.Controls.Add(numericMinSpeed);
+            groupBox5.Controls.Add(label23);
+            groupBox5.Controls.Add(numericTolerance);
             groupBox5.Controls.Add(label15);
             groupBox5.Controls.Add(label14);
             groupBox5.Font = new Font("Segoe UI", 18F);
@@ -613,6 +657,100 @@
             groupBox5.TabIndex = 8;
             groupBox5.TabStop = false;
             groupBox5.Text = "Параметри";
+            // 
+            // buttonSettingsSet
+            // 
+            buttonSettingsSet.Font = new Font("Segoe UI", 8F);
+            buttonSettingsSet.Location = new Point(199, 51);
+            buttonSettingsSet.Name = "buttonSettingsSet";
+            buttonSettingsSet.Size = new Size(54, 24);
+            buttonSettingsSet.TabIndex = 30;
+            buttonSettingsSet.Text = "Задати";
+            buttonSettingsSet.UseVisualStyleBackColor = true;
+            // 
+            // label26
+            // 
+            label26.AutoSize = true;
+            label26.Font = new Font("Segoe UI", 12F);
+            label26.Location = new Point(79, 147);
+            label26.Name = "label26";
+            label26.Size = new Size(128, 21);
+            label26.TabIndex = 29;
+            label26.Text = "кут гальмування";
+            // 
+            // numericBreackAngle
+            // 
+            numericBreackAngle.Font = new Font("Segoe UI", 8F);
+            numericBreackAngle.Location = new Point(6, 149);
+            numericBreackAngle.Maximum = new decimal(new int[] { 255, 0, 0, 0 });
+            numericBreackAngle.Name = "numericBreackAngle";
+            numericBreackAngle.Size = new Size(67, 22);
+            numericBreackAngle.TabIndex = 28;
+            numericBreackAngle.Value = new decimal(new int[] { 15, 0, 0, 0 });
+            // 
+            // label25
+            // 
+            label25.AutoSize = true;
+            label25.Font = new Font("Segoe UI", 12F);
+            label25.Location = new Point(79, 120);
+            label25.Name = "label25";
+            label25.Size = new Size(124, 21);
+            label25.TabIndex = 27;
+            label25.Text = "макс. швидкість";
+            // 
+            // numericMaxSpeed
+            // 
+            numericMaxSpeed.Font = new Font("Segoe UI", 8F);
+            numericMaxSpeed.Location = new Point(6, 121);
+            numericMaxSpeed.Maximum = new decimal(new int[] { 255, 0, 0, 0 });
+            numericMaxSpeed.Name = "numericMaxSpeed";
+            numericMaxSpeed.Size = new Size(67, 22);
+            numericMaxSpeed.TabIndex = 26;
+            numericMaxSpeed.Value = new decimal(new int[] { 255, 0, 0, 0 });
+            // 
+            // label24
+            // 
+            label24.AutoSize = true;
+            label24.Font = new Font("Segoe UI", 12F);
+            label24.Location = new Point(79, 91);
+            label24.Name = "label24";
+            label24.Size = new Size(114, 21);
+            label24.TabIndex = 25;
+            label24.Text = "мін. швидкість";
+            label24.Click += label24_Click;
+            // 
+            // numericMinSpeed
+            // 
+            numericMinSpeed.Font = new Font("Segoe UI", 8F);
+            numericMinSpeed.Location = new Point(6, 93);
+            numericMinSpeed.Maximum = new decimal(new int[] { 255, 0, 0, 0 });
+            numericMinSpeed.Name = "numericMinSpeed";
+            numericMinSpeed.Size = new Size(67, 22);
+            numericMinSpeed.TabIndex = 24;
+            numericMinSpeed.Value = new decimal(new int[] { 140, 0, 0, 0 });
+            // 
+            // label23
+            // 
+            label23.AutoSize = true;
+            label23.Font = new Font("Segoe UI", 12F);
+            label23.Location = new Point(79, 63);
+            label23.Name = "label23";
+            label23.Size = new Size(69, 21);
+            label23.TabIndex = 23;
+            label23.Text = "похибка";
+            // 
+            // numericTolerance
+            // 
+            numericTolerance.DecimalPlaces = 1;
+            numericTolerance.Font = new Font("Segoe UI", 8F);
+            numericTolerance.Increment = new decimal(new int[] { 1, 0, 0, 65536 });
+            numericTolerance.Location = new Point(6, 65);
+            numericTolerance.Maximum = new decimal(new int[] { 5, 0, 0, 0 });
+            numericTolerance.Minimum = new decimal(new int[] { 1, 0, 0, 65536 });
+            numericTolerance.Name = "numericTolerance";
+            numericTolerance.Size = new Size(67, 22);
+            numericTolerance.TabIndex = 22;
+            numericTolerance.Value = new decimal(new int[] { 5, 0, 0, 65536 });
             // 
             // label15
             // 
@@ -634,25 +772,15 @@
             label14.TabIndex = 3;
             label14.Text = "шивидкість:";
             // 
-            // label22
+            // buttonSettigsGet
             // 
-            label22.AutoSize = true;
-            label22.ForeColor = Color.IndianRed;
-            label22.Location = new Point(6, 107);
-            label22.Name = "label22";
-            label22.Size = new Size(153, 15);
-            label22.TabIndex = 19;
-            label22.Text = "Азимут кута 180 градусів - ";
-            // 
-            // labelAN_AZ
-            // 
-            labelAN_AZ.AutoSize = true;
-            labelAN_AZ.ForeColor = Color.IndianRed;
-            labelAN_AZ.Location = new Point(153, 108);
-            labelAN_AZ.Name = "labelAN_AZ";
-            labelAN_AZ.Size = new Size(28, 15);
-            labelAN_AZ.TabIndex = 22;
-            labelAN_AZ.Text = "000 ";
+            buttonSettigsGet.Font = new Font("Segoe UI", 8F);
+            buttonSettigsGet.Location = new Point(182, 21);
+            buttonSettigsGet.Name = "buttonSettigsGet";
+            buttonSettigsGet.Size = new Size(71, 24);
+            buttonSettigsGet.TabIndex = 31;
+            buttonSettigsGet.Text = "Зчитати";
+            buttonSettigsGet.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
@@ -693,6 +821,10 @@
             ((System.ComponentModel.ISupportInitialize)numericAzScanStart).EndInit();
             groupBox5.ResumeLayout(false);
             groupBox5.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numericBreackAngle).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericMaxSpeed).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericMinSpeed).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numericTolerance).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -752,5 +884,15 @@
         private RadioButton radioButton1;
         private Label label22;
         private Label labelAN_AZ;
+        private Label label23;
+        private NumericUpDown numericTolerance;
+        private Label label25;
+        private NumericUpDown numericMaxSpeed;
+        private Label label24;
+        private NumericUpDown numericMinSpeed;
+        private Label label26;
+        private NumericUpDown numericBreackAngle;
+        private Button buttonSettingsSet;
+        private Button buttonSettigsGet;
     }
 }

@@ -8,6 +8,10 @@
 
 #define EEPROM_SENSOR_ERROR_ADDR 0   // Адреса EEPROM для збереження SensorError
 #define EEPROM_AZIMUTH_OFFSET_ADDR 4 // Адреса EEPROM для збереження AzimuthOffset
+#define EEPROM_TOLERANCE_ADDR 8      // Адреса EEPROM для збереження Tolerance
+#define EEPROM_MIN_SPEED_ADDR 12     // Адреса EEPROM для збереження MinSpeed
+#define EEPROM_MAX_SPEED_ADDR 16     // Адреса EEPROM для збереження MaxSpeed
+#define EEPROM_BREACK_ANGLE_ADDR 20  // Адреса EEPROM для збереження BreackAngle
 
 // Етапи ініціалізації
 enum InitializationStage
@@ -33,10 +37,10 @@ class AngleController
 public:
     AngleController(DRV8871 &motor, MT6701 &sensor);
 
-    float Tolerance = 1.0f;    // Допуск для зупинки
-    float MinSpeed = 155.0f;   // Мінімальна швидкість руху
-    float MaxSpeed = 255.0f;   // Максимальна швидкість руху
-    float BreackAngle = 15.0f; // Кут початку гальмування
+    static float Tolerance;    // Допуск для зупинки
+    static float MinSpeed;     // Мінімальна швидкість руху
+    static float MaxSpeed;     // Максимальна швидкість руху
+    static float BreackAngle;  // Кут початку гальмування
 
     float getSensorAngle();
     void moveToAngle(float targetAngle); // Задати нову ціль
@@ -44,6 +48,16 @@ public:
 
     void setSensorError(float value); // Задати поправку сенсора
     float getSensorError();           // Отримати поправку сенсора
+
+    // Параметри руху
+    void setTolerance(float value);    // Встановити допуск зупинки
+    float getTolerance();              // Отримати допуск зупинки
+    void setMinSpeed(float value);     // Встановити мінімальну швидкість
+    float getMinSpeed();               // Отримати мінімальну швидкість
+    void setMaxSpeed(float value);     // Встановити максимальну швидкість
+    float getMaxSpeed();               // Отримати максимальну швидкість
+    void setBreackAngle(float value);  // Встановити кут гальмування
+    float getBreackAngle();            // Отримати кут гальмування
 
     // Система ініціалізації
     InitializationStage getInitializationStage();           // Отримати поточний етап ініціалізації
@@ -106,4 +120,5 @@ private:                                             // Отримати пот�
 
     static float SensorError;
     static float AzimuthOffset;
+    // Статичні параметри руху для збереження в EEPROM
 };
