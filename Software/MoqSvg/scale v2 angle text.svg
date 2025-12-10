@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="gauge" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        .text_scale {
+            font-size: 1rem;
+            font-family: monospace;
+            fill: #ccc;
+            dominant-baseline: middle;
+            text-anchor: middle;
+        }
+        .text_scale_top {
+            font-size: 0.7rem;
+            font-family: monospace;
+            fill: #ccc;
+            dominant-baseline: middle;
+            text-anchor: middle;
+        }
+        .main-shape_scale_angle{
+            fill: #3A3A33;
+        }
+        .circle_scale{
+            fill: none;
+            stroke: #999;
+            stroke-width: 1;
+        }
+        .thin_scale{
+            stroke: #666;
+            stroke-width: 1;
+        }
+        .thick_scale {
+            stroke: #aaa;
+            stroke-width: 2;
+        }
+        .angle_rect {
+            fill: #3A3A33;
+            stroke-width: 1;
+        }
+        .angle_text {
+            font-family: monospace;
+            font-size: 12px;
+            fill: #ccc;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+        .mask_rect {
+            fill: white;
+        }
+        .mask_circle {
+            fill: black;
+        }
+    </style>
+    <defs>
+        <mask id="circleHole3">
+            <!-- Біле = видиме, чорне = прозоре -->
+            <rect x="-250" y="-250" width="900" height="900" class="mask_rect" />
+            <circle cx="200" cy="200" r="219"  class="mask_circle" />
+        </mask>
+    </defs>
+    <g transform="translate(50, 50)">
+        <rect x="160" y="-35" width="80" height="40" rx="25" ry="25" class="angle_rect" mask="url(#circleHole3)"/>
+        <text x="200" y="-28" class="angle_text">кут</text>
+    </g>
+</svg>
