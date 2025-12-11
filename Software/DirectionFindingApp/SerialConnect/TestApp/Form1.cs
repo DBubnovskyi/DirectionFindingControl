@@ -1,6 +1,10 @@
 using SerialConnect;
 using SerialMonitor;
 using System.Collections.Concurrent;
+using GMap.NET;
+using GMap.NET.MapProviders;
+using GMap.NET.WindowsForms;
+using GMap.NET.WindowsForms.Markers;
 
 namespace TestApp
 {
@@ -44,6 +48,14 @@ namespace TestApp
         private bool _rotationTimedOut = false;
         private int _scanRetryIntervalMs = 300; // retry waiting for stop
 
+        private float _lastKnownAzimuth = 0.0f;
+
+        // Map marker and azimuth line
+        private GMapOverlay? _markersOverlay = null;
+        private GMapMarker? _stationMarker = null;
+        private GMapOverlay? _routesOverlay = null;
+        private GMapRoute? _azimuthLine = null;
+
         public Form1()
         {
             InitializeComponent();
@@ -55,6 +67,7 @@ namespace TestApp
             InitializeScanTimer();
             InitializeRotationTimeoutTimer();
             InitializeSendQueueTimer();
+            InitializeMap();
         }
 
         private void InitializeUI()
@@ -74,10 +87,12 @@ namespace TestApp
             numericUpDownAz.Minimum = 0;
             numericUpDownAz.Maximum = 359;
             numericUpDownAz.Value = 0;
+            numericUpDownAz.KeyDown += NumericUpDownAz_KeyDown;
 
             numericUpDownAn.Minimum = 0;
             numericUpDownAn.Maximum = 359;
             numericUpDownAn.Value = 0;
+            numericUpDownAn.KeyDown += NumericUpDownAn_KeyDown;
 
             // Set initial label values
             label12.Text = "000";
@@ -158,6 +173,50 @@ namespace TestApp
             }
         }
 
+        private void NumericUpDownAz_KeyDown(object? sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                if (_isConnected)
+                {
+                    btnAz.PerformClick();
+                }
+            }
+        }
+
+        private void NumericUpDownAn_KeyDown(object? sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                if (_isConnected)
+                {
+                    btnAn.PerformClick();
+                }
+            }
+        }
+
+        private void NumericUpDownAz_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == (char)Keys.Enter)
+            {
+                e.Handled = true;
+                btnAz.PerformClick();
+            }
+        }
+
+        private void NumericUpDownAn_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == (char)Keys.Enter)
+            {
+                e.Handled = true;
+                btnAn.PerformClick();
+            }
+        }
+
 
 
 
@@ -176,6 +235,9 @@ namespace TestApp
                 _scanWaitTimer?.Dispose();
                 _sendQueueTimer?.Stop();
                 _sendQueueTimer?.Dispose();
+                _rotationTimeoutTimer?.Stop();
+                _rotationTimeoutTimer?.Dispose();
+                
                 // clear pending queued commands
                 while (_sendQueue.TryDequeue(out _)) { }
 
@@ -183,6 +245,34 @@ namespace TestApp
                 {
                     _serial.Disconnect();
                 }
+
+                // Очищення ресурсів карти
+                if (_azimuthLine != null)
+                {
+                    _routesOverlay?.Routes.Remove(_azimuthLine);
+                    _azimuthLine = null;
+                }
+
+                if (_stationMarker != null)
+                {
+                    _markersOverlay?.Markers.Remove(_stationMarker);
+                    _stationMarker = null;
+                }
+
+                if (_routesOverlay != null)
+                {
+                    gMapControl1?.Overlays.Remove(_routesOverlay);
+                    _routesOverlay = null;
+                }
+
+                if (_markersOverlay != null)
+                {
+                    gMapControl1?.Overlays.Remove(_markersOverlay);
+                    _markersOverlay = null;
+                }
+
+                // Dispose GMapControl
+                gMapControl1?.Dispose();
             }
             catch (Exception ex)
             {
@@ -204,10 +294,10 @@ namespace TestApp
 
         private void InitializeRefreshTimer()
         {
-            _refreshTimer = new System.Windows.Forms.Timer();
-            _refreshTimer.Interval = 2000; // Refresh every 2 seconds
-            _refreshTimer.Tick += RefreshTimer_Tick;
-            _refreshTimer.Start();
+            //_refreshTimer = new System.Windows.Forms.Timer();
+            //_refreshTimer.Interval = 2000; // Refresh every 2 seconds
+            //_refreshTimer.Tick += RefreshTimer_Tick;
+            //_refreshTimer.Start();
         }
 
         private void InitializeDataRequestTimer()
@@ -232,9 +322,55 @@ namespace TestApp
             _sendQueueTimer.Start();
         }
 
+        private void InitializeMap()
+        {
+            // Налаштування GMap.NET
+            gMapControl1.MapProvider = GMapProviders.OpenStreetMap;
+            GMaps.Instance.Mode = AccessMode.ServerAndCache;
 
+            // Встановлюємо центр карти (Київ, Україна як приклад)
+            gMapControl1.Position = new PointLatLng(50.4501, 30.5234);
+            gMapControl1.MinZoom = 2;
+            gMapControl1.MaxZoom = 18;
+            gMapControl1.Zoom = 10;
 
+            // Налаштування відображення
+            gMapControl1.ShowCenter = true; // Показуємо хрестик по центру
+            gMapControl1.DragButton = MouseButtons.Left;
 
+            // Створення оверлеїв для маркерів та ліній
+            _markersOverlay = new GMapOverlay("markers");
+            _routesOverlay = new GMapOverlay("routes");
+            gMapControl1.Overlays.Add(_routesOverlay);
+            gMapControl1.Overlays.Add(_markersOverlay);
+
+            // Додати обробник для оновлення лінії при зміні азимуту
+            label12.TextChanged += Label12_TextChanged;
+
+            // Обробник для перетягування маркера
+            gMapControl1.OnMarkerEnter += (marker) =>
+            {
+                if (marker?.Tag?.ToString() == "station")
+                {
+                    gMapControl1.Cursor = Cursors.Hand;
+                }
+            };
+
+            gMapControl1.OnMarkerLeave += (marker) =>
+            {
+                gMapControl1.Cursor = Cursors.Default;
+            };
+
+            // Обробник для оновлення лінії після переміщення маркера
+            gMapControl1.MouseUp += (sender, e) =>
+            {
+                if (_stationMarker != null && gMapControl1.IsMouseOverMarker)
+                {
+                    UpdateAzimuthLine();
+                }
+            };
+            buttonSetCoords_Click(new object(), new EventArgs());
+        }
 
         private void RefreshTimer_Tick(object? sender, EventArgs e)
         {
@@ -466,6 +602,7 @@ namespace TestApp
                         {
                             int azimuth = (int)Math.Round(azimuthFloat);
                             receivedAz = azimuth;
+                            _lastKnownAzimuth = azimuthFloat;
                             label12.Text = azimuthFloat.ToString("000.0");
                         }
                     }
@@ -893,9 +1030,9 @@ namespace TestApp
             // Check if the shorter arc (direct path) crosses AN_AZ (180° forbidden zone)
             int shortDiff = end - start;
             if (shortDiff < 0) shortDiff += 360;
-            
+
             bool shortestIsForward = shortDiff <= 180;
-            
+
             // Check if short path crosses AN_AZ
             bool shortPathCrossesAnAz = false;
             if (shortestIsForward)
@@ -926,14 +1063,14 @@ namespace TestApp
                     shortPathCrossesAnAz = (anAz < start || anAz > end);
                 }
             }
-            
+
             // If short path crosses AN_AZ, we must go the long way
             if (shortPathCrossesAnAz)
             {
                 // Reverse direction to take the long path
                 return shortestIsForward ? -1 : 1;
             }
-            
+
             // Otherwise use the shortest path
             return shortestIsForward ? 1 : -1;
         }
@@ -1232,9 +1369,107 @@ namespace TestApp
             }
         }
 
-        private void label24_Click(object sender, EventArgs e)
+        private void buttonSetCoords_Click(object sender, EventArgs e)
         {
+            if (_markersOverlay == null) return;
 
+            // Отримуємо поточну позицію центру карти
+            PointLatLng centerPosition = gMapControl1.Position;
+
+            if (_stationMarker != null)
+            {
+                // Видаляємо старий маркер
+                _markersOverlay.Markers.Remove(_stationMarker);
+                _stationMarker = null;
+            }
+
+            // Створюємо новий маркер
+            _stationMarker = new GMarkerGoogle(centerPosition, GMarkerGoogleType.red_small);
+            _stationMarker.ToolTipText = "Станція пеленгації";
+            _stationMarker.IsHitTestVisible = true;
+
+            // Дозволяємо перетягування маркера
+            _stationMarker.Tag = "station";
+            _markersOverlay.Markers.Add(_stationMarker);
+
+            // Малюємо початкову лінію азимуту
+            UpdateAzimuthLine();
+
+            gMapControl1.Refresh();
+        }
+
+        private void Label12_TextChanged(object? sender, EventArgs e)
+        {
+            // При зміні азимуту оновлюємо лінію
+            if (_stationMarker != null)
+            {
+                UpdateAzimuthLine();
+            }
+        }
+
+        private void UpdateAzimuthLine()
+        {
+            if (_stationMarker == null || _routesOverlay == null) return;
+
+            try
+            {
+                // Видаляємо стару лінію
+                if (_azimuthLine != null)
+                {
+                    _routesOverlay.Routes.Remove(_azimuthLine);
+                    _azimuthLine = null;
+                }
+
+                // Обчислюємо кінцеву точку лінії на відстані 150 км
+                PointLatLng startPoint = _stationMarker.Position;
+                PointLatLng endPoint = CalculateDestinationPoint(startPoint, _lastKnownAzimuth, 150.0);
+
+                // Створюємо нову лінію
+                List<PointLatLng> points = new List<PointLatLng> { startPoint, endPoint };
+                _azimuthLine = new GMapRoute(points, "azimuth");
+                _azimuthLine.Stroke = new Pen(Color.Red, 3);
+
+                _routesOverlay.Routes.Add(_azimuthLine);
+                
+                if (gMapControl1 != null && !gMapControl1.IsDisposed)
+                {
+                    gMapControl1.Refresh();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in UpdateAzimuthLine: {ex.Message}");
+            }
+        }
+
+        private PointLatLng CalculateDestinationPoint(PointLatLng start, double bearing, double distanceKm)
+        {
+            // Радіус Землі в км
+            const double earthRadius = 6371.0;
+
+            // Переводимо в радіани
+            double lat1 = start.Lat * Math.PI / 180.0;
+            double lon1 = start.Lng * Math.PI / 180.0;
+            double bearingRad = bearing * Math.PI / 180.0;
+            double distRad = distanceKm / earthRadius;
+
+            // Обчислюємо нову широту
+            double lat2 = Math.Asin(
+                Math.Sin(lat1) * Math.Cos(distRad) +
+                Math.Cos(lat1) * Math.Sin(distRad) * Math.Cos(bearingRad)
+            );
+
+            // Обчислюємо нову довготу
+            double lon2 = lon1 + Math.Atan2(
+                Math.Sin(bearingRad) * Math.Sin(distRad) * Math.Cos(lat1),
+                Math.Cos(distRad) - Math.Sin(lat1) * Math.Sin(lat2)
+            );
+
+            // Переводимо назад у градуси
+            double lat2Deg = lat2 * 180.0 / Math.PI;
+            double lon2Deg = lon2 * 180.0 / Math.PI;
+
+            return new PointLatLng(lat2Deg, lon2Deg);
         }
     }
 }

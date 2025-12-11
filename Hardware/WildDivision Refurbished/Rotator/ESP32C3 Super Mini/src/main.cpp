@@ -46,7 +46,7 @@ void setup()
     digitalWrite(RS485_DE_PIN, LOW); // Режим прийому за замовчуванням
   #endif
 
-  RS485Serial.begin(9600, SERIAL_8N1, RX_PIN, TX_PIN);
+  RS485Serial.begin(115200, SERIAL_8N1, RX_PIN, TX_PIN);
   Serial.begin(115200);
   // SerialProcessor приймає будь-який Stream об'єкт Serial чи HardwareSerial
   serialProc = new SerialProcessor(*controller, angleSensor, RS485Serial, led, RS485_DE_PIN);

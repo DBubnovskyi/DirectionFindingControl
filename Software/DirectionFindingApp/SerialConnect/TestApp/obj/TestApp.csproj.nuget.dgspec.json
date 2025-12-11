@@ -206,6 +206,24 @@
         "net8.0-windows7.0": {
           "targetAlias": "net8.0-windows",
           "dependencies": {
+            "GMap.NET.WinForms": {
+              "target": "Package",
+              "version": "[2.1.7, )"
+            },
+            "Mapsui.Rendering.Skia": {
+              "target": "Package",
+              "version": "[5.0.2, )"
+            },
+            "Microsoft.NET.ILLink.Tasks": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[8.0.19, )",
+              "autoReferenced": true
+            },
+            "ProjNET": {
+              "target": "Package",
+              "version": "[2.1.0, )"
+            },
             "System.IO.Ports": {
               "target": "Package",
               "version": "[8.0.0, )"
@@ -222,6 +240,20 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
+              "version": "[8.0.19, 8.0.19]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Runtime.win-x64",
+              "version": "[8.0.19, 8.0.19]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
+              "version": "[8.0.19, 8.0.19]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
@@ -231,6 +263,11 @@
             }
           },
           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "win-x64": {
+          "#import": []
         }
       }
     }

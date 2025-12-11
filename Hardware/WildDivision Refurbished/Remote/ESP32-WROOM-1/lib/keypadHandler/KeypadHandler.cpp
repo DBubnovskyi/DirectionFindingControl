@@ -34,8 +34,16 @@ void KeypadHandler::handle()
     {
         if (key == '#')
         {
-            SerialHandler::sendRsSerial("$IN,1;#ER,#AZ;#AN;");
+            SerialHandler::sendRsSerial("$IN,1;#ER,#AZ;#AN;#IN;");
             screenHandler->showScreen("init1-2");
+        }
+    }
+    else if (currentScreen == "init1-2")
+    {
+        if (key == '*')
+        {
+            SerialHandler::sendRsSerial("$IN,0;#ER,#AZ;#AN;#IN");
+            screenHandler->showScreen("init0");
         }
     }
     else if (currentScreen == "init2")
@@ -48,8 +56,13 @@ void KeypadHandler::handle()
         }
         else if (key == '#')
         {
-            SerialHandler::sendRsSerial("$IN,3;#ER,#AZ;#AN;");
+            SerialHandler::sendRsSerial("$IN,3;#ER,#AZ;#AN;#IN");
             screenHandler->showScreen("init3");
+        }
+        else if (key == '*')
+        {
+            SerialHandler::sendRsSerial("$IN,0;#ER,#AZ;#AN;#IN");
+            screenHandler->showScreen("init0");
         }
         else
         {
@@ -79,7 +92,7 @@ void KeypadHandler::handle()
             {
                 String init3Data[] = {String(RotatorState::angle), inputBuffer, String(RotatorState::correction), "", ""};
                 screenHandler->showScreen("init4", init3Data);
-                String message = "$AN_AZ," + inputBuffer + ";$IN,3;";
+                String message = "$AN_AZ," + inputBuffer + ";$IN,3;#IN;";
                 SerialHandler::sendRsSerial(message);
                 inputBuffer = "0";
             }

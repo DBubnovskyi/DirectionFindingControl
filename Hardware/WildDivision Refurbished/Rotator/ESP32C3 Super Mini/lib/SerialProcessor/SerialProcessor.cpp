@@ -189,6 +189,8 @@ void SerialProcessor::processCommand(const String &command)
             if (command.startsWith("$ER,"))
             {
                 String value = command.substring(4); // Отримуємо частину після "$ER,"
+                value.trim(); // Видаляємо пробіли
+                
                 if (value == "L")
                 {
                     _controller.adjustSensorError('L');
