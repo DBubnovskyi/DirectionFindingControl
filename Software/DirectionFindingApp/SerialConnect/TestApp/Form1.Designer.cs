@@ -51,6 +51,8 @@
             label1 = new Label();
             button1 = new Button();
             groupBoxMap = new GroupBox();
+            panel4 = new Panel();
+            label27 = new Label();
             buttonSetCoords = new Button();
             gMapControl1 = new GMap.NET.WindowsForms.GMapControl();
             panel1 = new Panel();
@@ -100,6 +102,7 @@
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             groupBoxMap.SuspendLayout();
+            panel4.SuspendLayout();
             panel1.SuspendLayout();
             panel3.SuspendLayout();
             groupBox4.SuspendLayout();
@@ -357,6 +360,7 @@
             // 
             // groupBoxMap
             // 
+            groupBoxMap.Controls.Add(panel4);
             groupBoxMap.Controls.Add(buttonSetCoords);
             groupBoxMap.Controls.Add(gMapControl1);
             groupBoxMap.Dock = DockStyle.Fill;
@@ -366,6 +370,24 @@
             groupBoxMap.TabIndex = 9;
             groupBoxMap.TabStop = false;
             groupBoxMap.Text = "Мапа";
+            // 
+            // panel4
+            // 
+            panel4.Controls.Add(label27);
+            panel4.Location = new Point(6, 46);
+            panel4.Name = "panel4";
+            panel4.Size = new Size(168, 39);
+            panel4.TabIndex = 2;
+            // 
+            // label27
+            // 
+            label27.AutoSize = true;
+            label27.Location = new Point(3, 4);
+            label27.MaximumSize = new Size(170, 0);
+            label27.Name = "label27";
+            label27.Size = new Size(161, 30);
+            label27.TabIndex = 0;
+            label27.Text = "Клік по карті задає азтмут куди буде повернуто антену";
             // 
             // buttonSetCoords
             // 
@@ -554,7 +576,7 @@
             // numericScanStep
             // 
             numericScanStep.Location = new Point(168, 52);
-            numericScanStep.Maximum = new decimal(new int[] { 90, 0, 0, 0 });
+            numericScanStep.Maximum = new decimal(new int[] { 360, 0, 0, 0 });
             numericScanStep.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             numericScanStep.Name = "numericScanStep";
             numericScanStep.Size = new Size(73, 23);
@@ -683,6 +705,7 @@
             btnAz.TabIndex = 1;
             btnAz.Text = "Задати";
             btnAz.UseVisualStyleBackColor = true;
+            btnAz.Click += btnAz_Click_1;
             // 
             // numericUpDownAz
             // 
@@ -762,6 +785,7 @@
             buttonSettigsGet.TabIndex = 31;
             buttonSettigsGet.Text = "Зчитати";
             buttonSettigsGet.UseVisualStyleBackColor = true;
+            buttonSettigsGet.Click += buttonSettigsGet_Click;
             // 
             // buttonSettingsSet
             // 
@@ -890,6 +914,8 @@
             groupBox1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).EndInit();
             groupBoxMap.ResumeLayout(false);
+            panel4.ResumeLayout(false);
+            panel4.PerformLayout();
             panel1.ResumeLayout(false);
             panel1.PerformLayout();
             panel3.ResumeLayout(false);
@@ -991,5 +1017,7 @@
         private Label label15;
         private Label label14;
         private Button buttonSetCoords;
+        private Panel panel4;
+        private Label label27;
     }
 }

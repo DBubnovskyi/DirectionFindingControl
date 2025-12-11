@@ -55,6 +55,11 @@ namespace TestApp
         private GMapMarker? _stationMarker = null;
         private GMapOverlay? _routesOverlay = null;
         private GMapRoute? _azimuthLine = null;
+        private GMapPolygon? _azimuthPolygon = null;
+        private GMapPolygon? _forbiddenPolygon = null;
+        private GMapRoute? _mousePreviewLine = null;
+        private ToolTip _mapToolTip = new ToolTip();
+        private readonly Pen _mousePreviewPen = new Pen(Color.Blue, 1) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash };
 
         public Form1()
         {
@@ -120,13 +125,6 @@ namespace TestApp
             numericAzScanEnd.Value = 0;
             numericAzScanEnd.ValueChanged += NumericAzScan_ValueChanged;
 
-            numericScanStep.Minimum = 1;
-            numericScanStep.Maximum = 180;
-            numericScanStep.Value = 10;
-
-            numericScanTime.Minimum = 1;
-            numericScanTime.Maximum = 3600;
-            numericScanTime.Value = 5;
 
             radioButton1.Checked = true; // Pendulum mode by default
             radioButton1.CheckedChanged += RadioButton_CheckedChanged;
@@ -161,6 +159,44 @@ namespace TestApp
 
                 int azimuth = (int)numericUpDownAz.Value;
                 SendCommand($"$AZ,{azimuth};");
+            }
+        }
+
+        private void ButtonAzL_Click(object? sender, EventArgs e)
+        {
+            if (_isConnected)
+            {
+                // Зменшуємо азимут на 1 градус від поточного відображеного значення
+                int currentAz = (int)numericUpDownAz.Value;
+                int newAz = currentAz - 1;
+
+                // Перевірка на діапазон 0-359
+                if (newAz < 0)
+                {
+                    newAz = 359;
+                }
+
+                numericUpDownAz.Value = newAz;
+                SendCommand($"$AZ,{newAz};");
+            }
+        }
+
+        private void ButtonAzR_Click(object? sender, EventArgs e)
+        {
+            if (_isConnected)
+            {
+                // Збільшуємо азимут на 1 градус від поточного відображеного значення
+                int currentAz = (int)numericUpDownAz.Value;
+                int newAz = currentAz + 1;
+
+                // Перевірка на діапазон 0-359
+                if (newAz > 359)
+                {
+                    newAz = 0;
+                }
+
+                numericUpDownAz.Value = newAz;
+                SendCommand($"$AZ,{newAz};");
             }
         }
 
@@ -237,7 +273,7 @@ namespace TestApp
                 _sendQueueTimer?.Dispose();
                 _rotationTimeoutTimer?.Stop();
                 _rotationTimeoutTimer?.Dispose();
-                
+
                 // clear pending queued commands
                 while (_sendQueue.TryDequeue(out _)) { }
 
@@ -251,6 +287,18 @@ namespace TestApp
                 {
                     _routesOverlay?.Routes.Remove(_azimuthLine);
                     _azimuthLine = null;
+                }
+
+                if (_azimuthPolygon != null)
+                {
+                    _routesOverlay?.Polygons.Remove(_azimuthPolygon);
+                    _azimuthPolygon = null;
+                }
+
+                if (_forbiddenPolygon != null)
+                {
+                    _routesOverlay?.Polygons.Remove(_forbiddenPolygon);
+                    _forbiddenPolygon = null;
                 }
 
                 if (_stationMarker != null)
@@ -369,7 +417,14 @@ namespace TestApp
                     UpdateAzimuthLine();
                 }
             };
+
+            // Обробник для малювання пунктирної лінії до миші
+            gMapControl1.MouseMove += GMapControl1_MouseMove;
+            gMapControl1.MouseLeave += GMapControl1_MouseLeave;
+            gMapControl1.MouseClick += GMapControl1_MouseClick;
+
             buttonSetCoords_Click(new object(), new EventArgs());
+            ButtonSettingsGet_Click(new object(), new EventArgs());
         }
 
         private void RefreshTimer_Tick(object? sender, EventArgs e)
@@ -680,6 +735,12 @@ namespace TestApp
                     int calculatedAnAz = (receivedAz.Value - receivedAn.Value + 180 + 360) % 360;
                     _anAzValue = calculatedAnAz;
                     labelAN_AZ.Text = calculatedAnAz.ToString("000");
+
+                    // Оновлюємо полігони на карті при зміні AN_AZ
+                    if (_stationMarker != null)
+                    {
+                        UpdateAzimuthLine();
+                    }
                 }
             }
             catch (Exception ex)
@@ -716,6 +777,8 @@ namespace TestApp
                         _dataRequestTimer?.Start();
 
                         // Enable controls in groupBox1 when connected
+                        
+                        ButtonSettingsGet_Click(new object(), new EventArgs());
                         groupBox1.Enabled = true;
                         break;
 
@@ -1420,6 +1483,13 @@ namespace TestApp
                     _azimuthLine = null;
                 }
 
+                // Видаляємо старий полігон
+                if (_azimuthPolygon != null)
+                {
+                    _routesOverlay.Polygons.Remove(_azimuthPolygon);
+                    _azimuthPolygon = null;
+                }
+
                 // Обчислюємо кінцеву точку лінії на відстані 150 км
                 PointLatLng startPoint = _stationMarker.Position;
                 PointLatLng endPoint = CalculateDestinationPoint(startPoint, _lastKnownAzimuth, 150.0);
@@ -1427,10 +1497,57 @@ namespace TestApp
                 // Створюємо нову лінію
                 List<PointLatLng> points = new List<PointLatLng> { startPoint, endPoint };
                 _azimuthLine = new GMapRoute(points, "azimuth");
-                _azimuthLine.Stroke = new Pen(Color.Red, 3);
+                _azimuthLine.Stroke = new Pen(Color.BlueViolet, 3);
 
                 _routesOverlay.Routes.Add(_azimuthLine);
-                
+
+                // Створюємо полігон: центр, ліва точка (-7°), права точка (+7°)
+                double leftAzimuth = (_lastKnownAzimuth - 7 + 360) % 360;
+                double rightAzimuth = (_lastKnownAzimuth + 7) % 360;
+
+                PointLatLng leftPoint = CalculateDestinationPoint(startPoint, leftAzimuth, 150.0);
+                PointLatLng rightPoint = CalculateDestinationPoint(startPoint, rightAzimuth, 150.0);
+
+                List<PointLatLng> polygonPoints = new List<PointLatLng>
+                {
+                    startPoint,
+                    leftPoint,
+                    rightPoint
+                };
+
+                _azimuthPolygon = new GMapPolygon(polygonPoints, "azimuthPolygon");
+                _azimuthPolygon.Fill = new SolidBrush(Color.FromArgb(102, Color.BlueViolet)); // 0.4 opacity = 102/255
+                _azimuthPolygon.Stroke = new Pen(Color.BlueViolet, 1);
+
+                _routesOverlay.Polygons.Add(_azimuthPolygon);
+
+                // Видаляємо старий заборонений полігон
+                if (_forbiddenPolygon != null)
+                {
+                    _routesOverlay.Polygons.Remove(_forbiddenPolygon);
+                    _forbiddenPolygon = null;
+                }
+
+                // Створюємо заборонений полігон за кутом AN_AZ на 50 км
+                double forbiddenLeftAzimuth = (_anAzValue - 7 + 360) % 360;
+                double forbiddenRightAzimuth = (_anAzValue + 7) % 360;
+
+                PointLatLng forbiddenLeftPoint = CalculateDestinationPoint(startPoint, forbiddenLeftAzimuth, 50.0);
+                PointLatLng forbiddenRightPoint = CalculateDestinationPoint(startPoint, forbiddenRightAzimuth, 50.0);
+
+                List<PointLatLng> forbiddenPolygonPoints = new List<PointLatLng>
+                {
+                    startPoint,
+                    forbiddenLeftPoint,
+                    forbiddenRightPoint
+                };
+
+                _forbiddenPolygon = new GMapPolygon(forbiddenPolygonPoints, "forbiddenPolygon");
+                _forbiddenPolygon.Fill = new SolidBrush(Color.FromArgb(102, Color.Red)); // 0.4 opacity = 102/255
+                _forbiddenPolygon.Stroke = new Pen(Color.Transparent, 0); // Без бордера
+
+                _routesOverlay.Polygons.Add(_forbiddenPolygon);
+
                 if (gMapControl1 != null && !gMapControl1.IsDisposed)
                 {
                     gMapControl1.Refresh();
@@ -1470,6 +1587,150 @@ namespace TestApp
             double lon2Deg = lon2 * 180.0 / Math.PI;
 
             return new PointLatLng(lat2Deg, lon2Deg);
+        }
+
+        private double CalculateAzimuth(PointLatLng from, PointLatLng to)
+        {
+            // Обчислює азимут від точки from до точки to
+            double lat1 = from.Lat * Math.PI / 180.0;
+            double lon1 = from.Lng * Math.PI / 180.0;
+            double lat2 = to.Lat * Math.PI / 180.0;
+            double lon2 = to.Lng * Math.PI / 180.0;
+
+            double dLon = lon2 - lon1;
+
+            double y = Math.Sin(dLon) * Math.Cos(lat2);
+            double x = Math.Cos(lat1) * Math.Sin(lat2) -
+                       Math.Sin(lat1) * Math.Cos(lat2) * Math.Cos(dLon);
+
+            double azimuthRad = Math.Atan2(y, x);
+            double azimuthDeg = azimuthRad * 180.0 / Math.PI;
+
+            // Нормалізуємо до діапазону 0-360
+            azimuthDeg = (azimuthDeg + 360.0) % 360.0;
+
+            return azimuthDeg;
+        }
+
+        private double CalculateDistance(PointLatLng from, PointLatLng to)
+        {
+            // Обчислює відстань між двома точками в км (формула Haversine)
+            const double earthRadius = 6371.0;
+
+            double lat1 = from.Lat * Math.PI / 180.0;
+            double lon1 = from.Lng * Math.PI / 180.0;
+            double lat2 = to.Lat * Math.PI / 180.0;
+            double lon2 = to.Lng * Math.PI / 180.0;
+
+            double dLat = lat2 - lat1;
+            double dLon = lon2 - lon1;
+
+            double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                       Math.Cos(lat1) * Math.Cos(lat2) *
+                       Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+
+            double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+            double distance = earthRadius * c;
+
+            return distance;
+        }
+
+        private void GMapControl1_MouseMove(object? sender, MouseEventArgs e)
+        {
+            if (_stationMarker == null || _routesOverlay == null) return;
+
+            try
+            {
+                // Отримуємо координати миші на мапі
+                PointLatLng mousePosition = gMapControl1.FromLocalToLatLng(e.X, e.Y);
+
+                // Обчислюємо азимут від маркера до миші
+                double azimuth = CalculateAzimuth(_stationMarker.Position, mousePosition);
+
+                // Обчислюємо відстань від маркера до миші
+                double distance = CalculateDistance(_stationMarker.Position, mousePosition);
+
+                // Видаляємо стару лінію попереднього перегляду
+                if (_mousePreviewLine != null)
+                {
+                    _routesOverlay.Routes.Remove(_mousePreviewLine);
+                }
+
+                // Створюємо нову пунктирну лінію з підказкою азимуту
+                List<PointLatLng> points = new List<PointLatLng>
+                {
+                    _stationMarker.Position,
+                    mousePosition
+                };
+
+                _mousePreviewLine = new GMapRoute(points, "mousePreview")
+                {
+                    Stroke = _mousePreviewPen
+                };
+
+                _routesOverlay.Routes.Add(_mousePreviewLine);
+
+                // Встановлюємо підказку з азимутом та відстанню
+                string tooltipText = $"аз {azimuth:000.0}°\nд {distance:0.0}км";
+                _mapToolTip.SetToolTip(gMapControl1, tooltipText);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GMapControl1_MouseMove: {ex.Message}");
+            }
+        }
+
+        private void GMapControl1_MouseLeave(object? sender, EventArgs e)
+        {
+            try
+            {
+                // Видаляємо лінію попереднього перегляду коли мишка покидає мапу
+                if (_mousePreviewLine != null && _routesOverlay != null)
+                {
+                    _routesOverlay.Routes.Remove(_mousePreviewLine);
+                    _mousePreviewLine = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GMapControl1_MouseLeave: {ex.Message}");
+            }
+        }
+
+        private void GMapControl1_MouseClick(object? sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && _stationMarker != null)
+            {
+                try
+                {
+                    // Отримуємо координати кліка на карті
+                    PointLatLng clickPosition = gMapControl1.FromLocalToLatLng(e.X, e.Y);
+
+                    // Обчислюємо азимут від маркера до точки кліка
+                    double azimuth = CalculateAzimuth(_stationMarker.Position, clickPosition);
+
+                    // Округлюємо до цілих
+                    int azimuthInt = (int)Math.Round(azimuth);
+                    azimuthInt = azimuthInt == 360 ? 0 : azimuthInt;
+                    // Встановлюємо значення в numericUpDownAz
+                    numericUpDownAz.Value = azimuthInt;
+                    BtnAz_Click(sender, e);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error in GMapControl1_MouseClick: {ex.Message}");
+                }
+            }
+        }
+
+        private void btnAz_Click_1(object sender, EventArgs e)
+        {
+
+        }
+
+        private void buttonSettigsGet_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
