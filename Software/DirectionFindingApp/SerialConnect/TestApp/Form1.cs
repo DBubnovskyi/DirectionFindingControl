@@ -10,6 +10,8 @@ namespace TestApp
 {
     public partial class Form1 : Form
     {
+        private Form2 _form2;
+
         private Serial _serial = null!;
         private DeviceSimulator _simulator = null!;
         private bool _useSimulator = false;
@@ -82,26 +84,9 @@ namespace TestApp
 
             // Set initial selection mode for listBox1
             listBox1.SelectionMode = SelectionMode.One;
-
-            // Set azimuth range
-            numericUpDown1.Minimum = 0;
-            numericUpDown1.Maximum = 359;
-            numericUpDown1.Value = 0;
-
             // Set ranges for new numeric controls
-            numericUpDownAz.Minimum = 0;
-            numericUpDownAz.Maximum = 359;
-            numericUpDownAz.Value = 0;
             numericUpDownAz.KeyDown += NumericUpDownAz_KeyDown;
-
-            numericUpDownAn.Minimum = 0;
-            numericUpDownAn.Maximum = 359;
-            numericUpDownAn.Value = 0;
             numericUpDownAn.KeyDown += NumericUpDownAn_KeyDown;
-
-            // Set initial label values
-            label12.Text = "000";
-            label13.Text = "000";
 
             // Setup richTextBox1
             richTextBox1.ReadOnly = true;
@@ -114,15 +99,7 @@ namespace TestApp
             btnAz.Click += BtnAz_Click;
             btnAn.Click += BtnAn_Click;
 
-            // Initialize scan controls
-            numericAzScanStart.Minimum = 0;
-            numericAzScanStart.Maximum = 359;
-            numericAzScanStart.Value = 0;
             numericAzScanStart.ValueChanged += NumericAzScan_ValueChanged;
-
-            numericAzScanEnd.Minimum = 0;
-            numericAzScanEnd.Maximum = 359;
-            numericAzScanEnd.Value = 0;
             numericAzScanEnd.ValueChanged += NumericAzScan_ValueChanged;
 
 
@@ -131,13 +108,6 @@ namespace TestApp
             radioButton2.CheckedChanged += RadioButton_CheckedChanged;
 
             buttonScan.Click += ButtonScan_Click;
-            labelAN_AZ.Text = "000";
-
-            // Initialize settings controls (numericUpDown4 for brake angle)
-            numericBreackAngle.DecimalPlaces = 1;
-            numericBreackAngle.Minimum = 1;
-            numericBreackAngle.Maximum = 90;
-            numericBreackAngle.Increment = 1;
 
             // Connect settings buttons
             buttonSettigsGet.Click += ButtonSettingsGet_Click;
@@ -777,7 +747,7 @@ namespace TestApp
                         _dataRequestTimer?.Start();
 
                         // Enable controls in groupBox1 when connected
-                        
+
                         ButtonSettingsGet_Click(new object(), new EventArgs());
                         groupBox1.Enabled = true;
                         break;
@@ -1731,6 +1701,23 @@ namespace TestApp
         private void buttonSettigsGet_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void buttonRed_Click(object sender, EventArgs e)
+        {
+            if (_form2 == null || _form2.IsDisposed)
+            {
+                _form2 = new Form2();
+                _form2.OnButtonClick += () =>
+                {
+                    if(float.TryParse(label12.Text, out float result))
+                    {
+                        numericUpDownAz.Value = (int)result;
+                        BtnAz_Click(sender, e);
+                    }
+                };
+            }
+            _form2.Show();
         }
     }
 }

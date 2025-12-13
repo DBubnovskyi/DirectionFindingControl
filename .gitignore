@@ -7,3 +7,5 @@ Hardware/WildDivision Refurbished/Rotator/ESP32C3 Super Mini/.pio/
 Hardware/WildDivision Refurbished/Rotator/ESP32C3 Super Mini/.vscode/
 Software/DirectionFindingApp/SerialConnect/SerialMonitor/obj/
 Software/DirectionFindingApp/SerialConnect/SerialMonitor/bin/
+Software/DirectionFindingApp/SerialConnect/TestApp/bin/
+Software/DirectionFindingApp/SerialConnect/TestApp/obj/

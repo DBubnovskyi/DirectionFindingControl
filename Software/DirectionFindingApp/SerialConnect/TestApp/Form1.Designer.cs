@@ -99,6 +99,7 @@
             numericTolerance = new NumericUpDown();
             label15 = new Label();
             label14 = new Label();
+            buttonRed = new Button();
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             groupBoxMap.SuspendLayout();
@@ -360,6 +361,7 @@
             // 
             // groupBoxMap
             // 
+            groupBoxMap.Controls.Add(buttonRed);
             groupBoxMap.Controls.Add(panel4);
             groupBoxMap.Controls.Add(buttonSetCoords);
             groupBoxMap.Controls.Add(gMapControl1);
@@ -900,6 +902,20 @@
             label14.TabIndex = 3;
             label14.Text = "швидкість:";
             // 
+            // buttonRed
+            // 
+            buttonRed.BackColor = Color.Red;
+            buttonRed.FlatAppearance.BorderColor = Color.Red;
+            buttonRed.FlatAppearance.BorderSize = 0;
+            buttonRed.Location = new Point(134, 19);
+            buttonRed.Name = "buttonRed";
+            buttonRed.Size = new Size(203, 23);
+            buttonRed.TabIndex = 3;
+            buttonRed.Text = "показати велику червону кнопку";
+            buttonRed.TextAlign = ContentAlignment.BottomCenter;
+            buttonRed.UseVisualStyleBackColor = false;
+            buttonRed.Click += buttonRed_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -1019,5 +1035,6 @@
         private Button buttonSetCoords;
         private Panel panel4;
         private Label label27;
+        private Button buttonRed;
     }
 }
