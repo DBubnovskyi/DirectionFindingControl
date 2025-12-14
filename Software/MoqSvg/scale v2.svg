@@ -34,13 +34,6 @@
             
             stroke-width: 1;
         }
-        .azimuth_text {
-            font-family: monospace;
-            font-size: 12px;
-            fill: #ccc;
-            text-anchor: middle;
-            dominant-baseline: middle;
-        }
         .mask_rect {
             fill: white;
         }
@@ -56,8 +49,6 @@
         </mask>
     </defs>
     <g transform="translate(50, 50)">
-        <rect x="160" y="47" width="80" height="40" rx="15" ry="15" class="azimuth_rect"/>
-        <text x="200" y="80" class="azimuth_text">азимут</text>
         <circle cx="200" cy="200" r="180" class="main-shape_scale" mask="url(#circleHole)"/>
         <g transform="translate(200,200) scale(0.99) translate(-200,-200)">
             <text class="text_scale" x="200" y="45" transform="rotate(0, 200, 45)">0</text>

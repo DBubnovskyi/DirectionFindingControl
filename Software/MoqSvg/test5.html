@@ -20,11 +20,13 @@
             overflow: hidden;
         }
 
-        .compass_container img {
+        .compass_container img,
+        .compass_container object {
             position: absolute;
             width: 100%;
             height: 100%;
             cursor: pointer;
+            pointer-events: all;
         }
 
         .div1 {
@@ -137,18 +139,56 @@
             font-size: 3rem;
             font-weight: bold;
         }
+
+        /* Спільні стилі для інтерактивних SVG елементів */
+        .svg_interactive_rect {
+            stroke-width: 1;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        .svg_interactive_rect:hover {
+            fill: #2c3f44;
+        }
+        .svg_label_text {
+            font-family: monospace;
+            font-size: 12px;
+            fill: #ccc;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+        }
+        .azimuth_rect {
+            fill: #333;
+        }
+        .angle_rect {
+            fill: #3A3A33;
+        }
     </style>
 </head>
 
 <body>
     <div class="compass_container">
         <img key="scale" src="./scale v2.svg" alt="Unit Circle" style="transform: rotate(0deg);">
-        <img key="forbiddenZone" src="./scale v2 angle.svg" alt="Unit Circle" style="transform: rotate(308deg);">
-        <img key="scale" src="./scale v2 angle text.svg" alt="Unit Circle" style="transform: rotate(0deg);">
+        <img key="scaleAngle" src="./scale v2 angle.svg" alt="Unit Circle" style="transform: rotate(0deg);">
+
         <img key="scaleBottom" src="./scaleTopMark2.svg" alt="Unit Circle"
             style="transform: rotate(0deg); width: 94%; height: 94%;">
         <img key="scaleTopMark" src="./scaleBottom.svg" alt="Unit Circle"
             style="transform: rotate(0deg); width: 92%; height: 92%;">
+
+        <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" style="transform: rotate(0deg); position: absolute; width: 100%; height: 100%; pointer-events: none;">
+            <g transform="translate(50, 50)">
+                <path key="setAzimuth" class="azimuth_rect svg_interactive_rect" d=" M 160,77 A 6,1.7 0 0,0 240,77 A 3,0.6 0 0,0 160,77"/>
+                <text x="200" y="80" class="svg_label_text">азимут</text>
+            </g>
+        </svg>
+        
+        <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" style="transform: rotate(0deg); position: absolute; width: 100%; height: 100%; pointer-events: none;">
+            <g transform="translate(50, 50)">
+                <path key="setAngle" class="angle_rect svg_interactive_rect" d=" M 160,-14 A 5,2.6 0 0,1 240,-14 A 13,1.5 0 0,0 160,-14"/>
+                <text x="200" y="-28" class="svg_label_text">кут</text>
+            </g>
+        </svg>
 
         <svg class="scale_3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
             <defs>
@@ -172,7 +212,7 @@
     <script>
         const topMark = document.querySelector('img[key="scaleTopMark"]');
         const bottomMark = document.querySelector('img[key="scaleBottom"]');
-        const forbiddenZone = document.querySelector('img[key="forbiddenZone"]');
+        const scaleAngle = document.querySelector('img[key="scaleAngle"]');
         const set = document.querySelector('[key="set"]');
         const current = document.querySelector('[key="current"]');
 
@@ -195,7 +235,7 @@
         }
 
         // Перевірка чи кут знаходиться в забороненій зоні
-        function isInForbiddenZone(angle, forbiddenCenter, forbiddenWidth = 10) {
+        function isInscaleAngle(angle, forbiddenCenter, forbiddenWidth = 10) {
             angle = normalizeAngle(angle);
             forbiddenCenter = normalizeAngle(forbiddenCenter);
 
@@ -218,7 +258,7 @@
             forbiddenCenter = normalizeAngle(forbiddenCenter);
 
             // Якщо азимут не в забороненій зоні, антена може бути в тому ж куті
-            if (!isInForbiddenZone(azimuth, forbiddenCenter)) {
+            if (!isInscaleAngle(azimuth, forbiddenCenter)) {
                 return azimuth;
             }
 
@@ -243,7 +283,7 @@
         }
 
         // Обчислення помилки з урахуванням забороненої зони
-        function computeErrorWithForbiddenZone(target, current, forbiddenCenter) {
+        function computeErrorWithscaleAngle(target, current, forbiddenCenter) {
             target = normalizeAngle(target);
             current = normalizeAngle(current);
             forbiddenCenter = normalizeAngle(forbiddenCenter);
@@ -258,7 +298,7 @@
             // Перевіряємо чи шлях за годинниковою проходить через заборонену зону
             let pathCWBlocked = false;
             for (let i = 0; i <= errorCW; i += 1) {
-                if (isInForbiddenZone(normalizeAngle(current + i), forbiddenCenter)) {
+                if (isInscaleAngle(normalizeAngle(current + i), forbiddenCenter)) {
                     pathCWBlocked = true;
                     break;
                 }
@@ -267,7 +307,7 @@
             // Перевіряємо чи шлях проти годинникової проходить через заборонену зону
             let pathCCWBlocked = false;
             for (let i = 0; i <= errorCCW; i += 1) {
-                if (isInForbiddenZone(normalizeAngle(current - i), forbiddenCenter)) {
+                if (isInscaleAngle(normalizeAngle(current - i), forbiddenCenter)) {
                     pathCCWBlocked = true;
                     break;
                 }
@@ -332,7 +372,7 @@
 
             // отримуємо кут забороненої зони
             // SVG повернутий так, що трикутник вказує на 180° відносно обертання
-            const forbiddenCenter = normalizeAngle(getRotation(forbiddenZone) + 180);
+            const forbiddenCenter = normalizeAngle(getRotation(scaleAngle) + 180);
 
             // перетворюємо азимут в кут антени з урахуванням забороненої зони
             targetAngle = azimuthToAntennaAngle(targetAzimuth, getRotation(bottomMark), forbiddenCenter);
@@ -355,10 +395,10 @@
 
             // отримуємо кут забороненої зони
             // SVG повернутий так, що трикутник вказує на 180° відносно обертання
-            const forbiddenCenter = normalizeAngle(getRotation(forbiddenZone) + 180);
+            const forbiddenCenter = normalizeAngle(getRotation(scaleAngle) + 180);
 
             // обчислюємо помилку з урахуванням забороненої зони
-            let error = computeErrorWithForbiddenZone(targetAngle, angle, forbiddenCenter);
+            let error = computeErrorWithscaleAngle(targetAngle, angle, forbiddenCenter);
             let initError = computeError(angle, startAngle);
 
             // розрахунок швидкості

@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" style="pointer-events: none;">
     <style>
-        .angle_rect {
-            fill: #3A3A33;
-            stroke-width: 1;            
+        .azimuth_rect {
+            fill: #333;
+            stroke-width: 1;
             pointer-events: auto;
             cursor: pointer;
         }
-        .angle_rect:hover {
+        .azimuth_rect:hover {
             fill: #5555FF;
         }
-        .angle_text {
+        .azimuth_text {
             font-family: monospace;
             font-size: 12px;
             fill: #ccc;
@@ -26,7 +26,7 @@
         }
     </style>
     <g transform="translate(50, 50)">
-        <path class="angle_rect" d=" M 160,-14 A 5,2.6 0 0,1 240,-14 A 13,1.5 0 0,0 160,-14"/>
-        <text x="200" y="-28" class="angle_text">кут</text>
+        <path class="azimuth_rect" d=" M 160,77 A 6,1.7 0 0,0 240,77 A 3,0.6 0 0,0 160,77"/>
+        <text x="200" y="80" class="azimuth_text">азимут</text>
     </g>
 </svg>
