@@ -146,9 +146,11 @@
             pointer-events: auto;
             cursor: pointer;
         }
+
         .svg_interactive_rect:hover {
             fill: #2c3f44;
         }
+
         .svg_label_text {
             font-family: monospace;
             font-size: 12px;
@@ -157,9 +159,11 @@
             dominant-baseline: middle;
             pointer-events: none;
         }
+
         .azimuth_rect {
             fill: #333;
         }
+
         .angle_rect {
             fill: #3A3A33;
         }
@@ -176,16 +180,20 @@
         <img key="scaleTopMark" src="./scaleBottom.svg" alt="Unit Circle"
             style="transform: rotate(0deg); width: 92%; height: 92%;">
 
-        <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" style="transform: rotate(0deg); position: absolute; width: 100%; height: 100%; pointer-events: none;">
+        <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"
+            style="transform: rotate(0deg); position: absolute; width: 100%; height: 100%; pointer-events: none;">
             <g transform="translate(50, 50)">
-                <path key="setAzimuth" class="azimuth_rect svg_interactive_rect" d=" M 160,77 A 6,1.7 0 0,0 240,77 A 3,0.6 0 0,0 160,77"/>
+                <path key="setAzimuth" class="azimuth_rect svg_interactive_rect"
+                    d=" M 160,77 A 6,1.7 0 0,0 240,77 A 3,0.6 0 0,0 160,77" />
                 <text x="200" y="80" class="svg_label_text">азимут</text>
             </g>
         </svg>
-        
-        <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" style="transform: rotate(0deg); position: absolute; width: 100%; height: 100%; pointer-events: none;">
+
+        <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"
+            style="transform: rotate(0deg); position: absolute; width: 100%; height: 100%; pointer-events: none;">
             <g transform="translate(50, 50)">
-                <path key="setAngle" class="angle_rect svg_interactive_rect" d=" M 160,-14 A 5,2.6 0 0,1 240,-14 A 13,1.5 0 0,0 160,-14"/>
+                <path key="setAngle" class="angle_rect svg_interactive_rect"
+                    d=" M 160,-14 A 5,2.6 0 0,1 240,-14 A 13,1.5 0 0,0 160,-14" />
                 <text x="200" y="-28" class="svg_label_text">кут</text>
             </g>
         </svg>
@@ -210,11 +218,17 @@
         </svg>
     </div>
     <script>
+        let delta = 45;
         const topMark = document.querySelector('img[key="scaleTopMark"]');
         const bottomMark = document.querySelector('img[key="scaleBottom"]');
+        const scale = document.querySelector('img[key="scale"]');
         const scaleAngle = document.querySelector('img[key="scaleAngle"]');
         const set = document.querySelector('[key="set"]');
         const current = document.querySelector('[key="current"]');
+        const setAngle = document.querySelector('path[key="setAngle"]');
+        const setAzimuth = document.querySelector('path[key="setAzimuth"]');
+
+        scaleAngle.style.transform = `rotate(${delta}deg)`;
 
         function getRotation(el) {
             const match = el.style.transform.match(/rotate\(([-\d.]+)deg\)/);
@@ -222,6 +236,40 @@
         }
 
         // ===== Функції допоміжних обчислень =====
+
+        setAngle.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            const angle = parseInt(scaleAngle.style.transform.replace('rotate(', ''), 10);
+            if (angle === 0) {
+                return
+            }
+
+            scaleAngle.style.transform = `rotate(${0}deg)`;
+            scale.style.transform = `rotate(${delta}deg)`;
+
+            // const top = parseInt(topMark.style.transform.replace('rotate(', ''), 10);
+            // const bottom = parseInt(bottomMark.style.transform.replace('rotate(', ''), 10);
+            // topMark.style.transform = `rotate(${top + delta}deg)`;
+            // bottomMark.style.transform = `rotate(${bottom + delta}deg)`;
+        });
+
+        setAzimuth.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            const angle = parseInt(scale.style.transform.replace('rotate(', ''), 10);
+            if (angle === 0) {
+                return
+            }
+
+            scaleAngle.style.transform = `rotate(${-delta}deg)`;
+            scale.style.transform = `rotate(${0}deg)`;
+
+            // const top = parseInt(topMark.style.transform.replace('rotate(', ''), 10);
+            // const bottom = parseInt(bottomMark.style.transform.replace('rotate(', ''), 10);
+            // topMark.style.transform = `rotate(${top - delta}deg)`;
+            // bottomMark.style.transform = `rotate(${bottom - delta}deg)`;
+        });
 
         function getRandomAngle() {
             return Math.floor(Math.random() * 360);
