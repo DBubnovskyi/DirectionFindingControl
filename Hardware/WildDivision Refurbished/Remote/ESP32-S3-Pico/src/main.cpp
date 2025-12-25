@@ -3,7 +3,7 @@
 #include "KeypadHandler.h"
 #include "SerialHandler.h"
 
-ScreenHandler *screenHandler = new ScreenHandler(15, 16);
+ScreenHandler *screenHandler = new ScreenHandler(4, 5);
 KeypadHandler *keypadHandler = new KeypadHandler();
 SerialHandler *serialHandler = new SerialHandler();
 HardwareSerial RS485Serial(1);
@@ -11,7 +11,7 @@ HardwareSerial RS485Serial(1);
 void setup()
 {
     Serial.begin(115200);
-    RS485Serial.begin(115200, SERIAL_8N1, 27, 26);
+    RS485Serial.begin(115200, SERIAL_8N1, 9, 10);
     screenHandler->begin();
 
     keypadHandler->begin(screenHandler);

@@ -22,7 +22,7 @@
 #define TX_PIN 3
 // DE/RE контроль (високий = TX, низький = RX)
 // Встановіть -1 якщо ваш RS485 модуль має автоматичне керування DE/RE
-#define RS485_DE_PIN 4
+#define RS485_DE_PIN -1
 HardwareSerial RS485Serial(1);
 
 ESP32LED led;

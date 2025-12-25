@@ -17,8 +17,8 @@ private:
         {'7', '8', '9'},
         {'*', '0', '#'}};
 
-    byte rowPins[ROWS] = {5, 21, 22, 23};
-    byte colPins[COLS] = {17, 18, 19};
+    byte rowPins[ROWS] = {13, 16, 11, 34};
+    byte colPins[COLS] = {18, 12, 15};
 
     Keypad keypad;
 

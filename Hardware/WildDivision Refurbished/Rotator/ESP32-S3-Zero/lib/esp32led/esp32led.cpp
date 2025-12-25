@@ -4,7 +4,7 @@
 
 ESP32LED::ESP32LED()
 {
-  pinMode(LED_PIN, OUTPUT);
+  // pinMode(LED_PIN, OUTPUT);
 }
 
 void ESP32LED::begin()
@@ -14,10 +14,10 @@ void ESP32LED::begin()
 
 void ESP32LED::on(uint8_t brightness)
 {
-  analogWrite(LED_PIN, brightness);
+  // analogWrite(LED_PIN, brightness);
 }
 
 void ESP32LED::off()
 {
-  analogWrite(LED_PIN, 0);
+  // analogWrite(LED_PIN, 0);
 }

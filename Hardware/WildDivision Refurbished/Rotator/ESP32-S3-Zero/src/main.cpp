@@ -10,19 +10,19 @@
 #define Vector std::vector
 
 // Налаштування сенсора
-#define SENSOR_SDA 1
-#define SENSOR_SCL 0
+#define SENSOR_SDA 4
+#define SENSOR_SCL 2
 
 // Налаштування драйвера мотору
-#define IN1_PIN 10
-#define IN2_PIN 7
+#define IN1_PIN 12
+#define IN2_PIN 10
 
 // Налаштування RS485
-#define RX_PIN 2
-#define TX_PIN 3
+#define RX_PIN 7
+#define TX_PIN 8
 // DE/RE контроль (високий = TX, низький = RX)
 // Встановіть -1 якщо ваш RS485 модуль має автоматичне керування DE/RE
-#define RS485_DE_PIN 4
+#define RS485_DE_PIN -1
 HardwareSerial RS485Serial(1);
 
 ESP32LED led;
