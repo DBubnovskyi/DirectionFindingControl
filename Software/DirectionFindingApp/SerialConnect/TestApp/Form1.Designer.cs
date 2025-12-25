@@ -51,6 +51,7 @@
             label1 = new Label();
             button1 = new Button();
             groupBoxMap = new GroupBox();
+            buttonRed = new Button();
             panel4 = new Panel();
             label27 = new Label();
             buttonSetCoords = new Button();
@@ -99,7 +100,6 @@
             numericTolerance = new NumericUpDown();
             label15 = new Label();
             label14 = new Label();
-            buttonRed = new Button();
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             groupBoxMap.SuspendLayout();
@@ -373,23 +373,38 @@
             groupBoxMap.TabStop = false;
             groupBoxMap.Text = "Мапа";
             // 
+            // buttonRed
+            // 
+            buttonRed.BackColor = Color.Red;
+            buttonRed.FlatAppearance.BorderColor = Color.Red;
+            buttonRed.FlatAppearance.BorderSize = 0;
+            buttonRed.Location = new Point(134, 19);
+            buttonRed.Name = "buttonRed";
+            buttonRed.Size = new Size(203, 23);
+            buttonRed.TabIndex = 3;
+            buttonRed.Text = "показати велику червону кнопку";
+            buttonRed.TextAlign = ContentAlignment.BottomCenter;
+            buttonRed.UseVisualStyleBackColor = false;
+            buttonRed.Click += buttonRed_Click;
+            // 
             // panel4
             // 
             panel4.Controls.Add(label27);
             panel4.Location = new Point(6, 46);
             panel4.Name = "panel4";
-            panel4.Size = new Size(168, 39);
+            panel4.Size = new Size(183, 50);
             panel4.TabIndex = 2;
             // 
             // label27
             // 
             label27.AutoSize = true;
-            label27.Location = new Point(3, 4);
-            label27.MaximumSize = new Size(170, 0);
+            label27.Location = new Point(3, 0);
+            label27.MaximumSize = new Size(200, 0);
             label27.Name = "label27";
-            label27.Size = new Size(161, 30);
+            label27.Size = new Size(182, 45);
             label27.TabIndex = 0;
-            label27.Text = "Клік по карті задає азтмут куди буде повернуто антену";
+            label27.Text = "Клік правою кнопкою миші по карті задає азтмут куди буде повернуто антену";
+            label27.Click += label27_Click;
             // 
             // buttonSetCoords
             // 
@@ -901,20 +916,6 @@
             label14.Size = new Size(86, 21);
             label14.TabIndex = 3;
             label14.Text = "швидкість:";
-            // 
-            // buttonRed
-            // 
-            buttonRed.BackColor = Color.Red;
-            buttonRed.FlatAppearance.BorderColor = Color.Red;
-            buttonRed.FlatAppearance.BorderSize = 0;
-            buttonRed.Location = new Point(134, 19);
-            buttonRed.Name = "buttonRed";
-            buttonRed.Size = new Size(203, 23);
-            buttonRed.TabIndex = 3;
-            buttonRed.Text = "показати велику червону кнопку";
-            buttonRed.TextAlign = ContentAlignment.BottomCenter;
-            buttonRed.UseVisualStyleBackColor = false;
-            buttonRed.Click += buttonRed_Click;
             // 
             // Form1
             // 

@@ -233,6 +233,12 @@ namespace TestApp
         {
             try
             {
+                // Закриваємо Form2 якщо вона відкрита
+                if (_form2 != null && !_form2.IsDisposed)
+                {
+                    _form2.Close();
+                }
+
                 _refreshTimer?.Stop();
                 _refreshTimer?.Dispose();
                 _dataRequestTimer?.Stop();
@@ -1669,7 +1675,7 @@ namespace TestApp
 
         private void GMapControl1_MouseClick(object? sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left && _stationMarker != null)
+            if (e.Button == MouseButtons.Right && _stationMarker != null)
             {
                 try
                 {
@@ -1710,7 +1716,7 @@ namespace TestApp
                 _form2 = new Form2();
                 _form2.OnButtonClick += () =>
                 {
-                    if(float.TryParse(label12.Text, out float result))
+                    if (float.TryParse(label12.Text, out float result))
                     {
                         numericUpDownAz.Value = (int)result;
                         BtnAz_Click(sender, e);
@@ -1718,6 +1724,11 @@ namespace TestApp
                 };
             }
             _form2.Show();
+        }
+
+        private void label27_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
