@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" style="pointer-events: none;">
+    <style>
+        .azimuth_rect {
+            fill: #333;
+            stroke-width: 1;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        .azimuth_rect:hover {
+            fill: #5555FF;
+        }
+        .azimuth_text {
+            font-family: monospace;
+            font-size: 12px;
+            fill: #ccc;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+        }
+        .mask_rect {
+            fill: white;
+        }
+        .mask_circle {
+            fill: black;
+        }
+    </style>
+    <g transform="translate(50, 50)">
+        <path class="azimuth_rect" d=" M 160,77 A 6,1.7 0 0,0 240,77 A 3,0.6 0 0,0 160,77"/>
+        <text x="200" y="80" class="azimuth_text">азимут</text>
+    </g>
+</svg>

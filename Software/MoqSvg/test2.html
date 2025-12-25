@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Кутова шкала з нулем вгорі</title>
+    <style>
+        body {
+            background: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        text {
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <svg id="gauge" width="400" height="400" viewBox="0 0 400 400">
+        <circle cx="200" cy="200" r="180" stroke="#333" stroke-width="2" fill="white" />
+        <g id="marks"></g>
+    </svg>
+
+    <script>
+        const svgNS = "http://www.w3.org/2000/svg";
+        const centerX = 200;
+        const centerY = 200;
+        const radiusOuter = 180;
+        const radiusInnerMinor = 172;
+        const radiusInnerMajor = 165;
+        const labelRadius = 155;
+
+        const container = document.getElementById("marks");
+
+        for (let deg = 0; deg < 360; deg += 5) {
+            const angle = deg - 90; // 0° вгорі
+            const rad = angle * Math.PI / 180;
+
+            const x1 = centerX + radiusOuter * Math.cos(rad);
+            const y1 = centerY + radiusOuter * Math.sin(rad);
+            const x2 = centerX + (deg % 15 === 0 ? radiusInnerMajor : radiusInnerMinor) * Math.cos(rad);
+            const y2 = centerY + (deg % 15 === 0 ? radiusInnerMajor : radiusInnerMinor) * Math.sin(rad);
+
+            const line = document.createElementNS(svgNS, "line");
+            line.setAttribute("x1", x1);
+            line.setAttribute("y1", y1);
+            line.setAttribute("x2", x2);
+            line.setAttribute("y2", y2);
+            line.setAttribute("stroke", "#333");
+            line.setAttribute("stroke-width", deg % 15 === 0 ? "2" : "1");
+            container.appendChild(line);
+
+            if (deg % 15 === 0) {
+                const lx = centerX + labelRadius * Math.cos(rad);
+                const ly = centerY + labelRadius * Math.sin(rad);
+
+                const text = document.createElementNS(svgNS, "text");
+                text.setAttribute("x", lx);
+                text.setAttribute("y", ly);
+                text.setAttribute("text-anchor", "middle");
+                text.setAttribute("dominant-baseline", "middle");
+                text.setAttribute("font-size", "10");
+                text.setAttribute("fill", "#333");
+
+                const rotation = angle + 90; // щоб низ тексту був до центра
+                text.setAttribute("transform", `rotate(${rotation}, ${lx}, ${ly})`);
+                text.textContent = deg;
+                container.appendChild(text);
+            }
+        }
+    </script>
+</body>
+
+</html>

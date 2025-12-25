@@ -1,0 +1,4 @@
+D:\Projects\DirectionFinding\DirectionFindingControl\Software\DirectionFindingApp\SerialConnect\TestApp\bin\Publish\TestApp.pdb
+D:\Projects\DirectionFinding\DirectionFindingControl\Software\DirectionFindingApp\SerialConnect\TestApp\bin\Publish\SerialConnect.pdb
+D:\Projects\DirectionFinding\DirectionFindingControl\Software\DirectionFindingApp\SerialConnect\TestApp\bin\Publish\SerialMonitor.pdb
+D:\Projects\DirectionFinding\DirectionFindingControl\Software\DirectionFindingApp\SerialConnect\TestApp\bin\Publish\TestApp.exe

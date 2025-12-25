@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" style="pointer-events: none;">
+    <style>
+        .angle_rect {
+            fill: #3A3A33;
+            stroke-width: 1;            
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        .angle_rect:hover {
+            fill: #5555FF;
+        }
+        .angle_text {
+            font-family: monospace;
+            font-size: 12px;
+            fill: #ccc;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+        }
+        .mask_rect {
+            fill: white;
+        }
+        .mask_circle {
+            fill: black;
+        }
+    </style>
+    <g transform="translate(50, 50)">
+        <path class="angle_rect" d=" M 160,-14 A 5,2.6 0 0,1 240,-14 A 13,1.5 0 0,0 160,-14"/>
+        <text x="200" y="-28" class="angle_text">кут</text>
+    </g>
+</svg>

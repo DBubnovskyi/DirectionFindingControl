@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Одиничне коло</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #999;
+        }
+
+        .compass_container {
+            position: relative;
+            width: 42rem;
+            /* керуєш тільки цим */
+            aspect-ratio: 1/1;
+            /* фіксує пропорції */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .compass_container img {
+            position: absolute;
+            width: 94%;
+            height: 94%;
+        }
+
+        .div1 {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50%;
+            height: 50%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .div1 p {
+            margin: 0;
+        }
+
+        .angle_title {
+            font-size: 16px;
+            /* 100 =    viewport width, as 1vw = 1/100th of that
+                        So if the container is 50% of viewport (as here)
+                        then factor that into how you want it to size.
+                        Let's say you like 5vw if it were the whole width,
+                        then for this container, size it at 2.5vw (5 * .5 [i.e. 50%])
+                        */
+            /* font-size: 2.5vw; */
+            /* адаптивний від ширини і висоти */
+            font-weight: bold;
+            line-height: 1.2;
+            text-align: center;
+        }
+
+        .angle_value {
+            font-size: 16px;
+            /* 100 =    viewport width, as 1vw = 1/100th of that
+                        So if the container is 50% of viewport (as here)
+                        then factor that into how you want it to size.
+                        Let's say you like 5vw if it were the whole width,
+                        then for this container, size it at 2.5vw (5 * .5 [i.e. 50%])
+                        */
+            /* font-size: 2.5vw; */
+            /* масштаб від розміру вікна */
+            font-weight: bold;
+            line-height: 1;
+            text-align: center;
+        }
+
+        .div1 div {
+            width: 100%;
+            height: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 0.5vmin solid;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .div1 div.set_angle {
+            background: #76D9EB;
+            color: #438e9b;
+            border-color: #438e9b;
+            border-top-left-radius: 100% 200%;
+            border-top-right-radius: 100% 200%;
+            border-bottom: none;
+        }
+
+        .div1 div.current_angle {
+            background: #e0dd46;
+            color: #868532;
+            border-color: #868532;
+            border-bottom-left-radius: 100% 200%;
+            border-bottom-right-radius: 100% 200%;
+            border-top: none;
+        }
+
+        .svg.top {
+            fill: #76D9EB;
+            stroke: #438e9b;
+            stroke-width: 2;
+        }
+
+        .svg.bottom {
+            fill: #e0dd46;
+            stroke: #868532;
+            stroke-width: 2;
+        }
+
+        .svg.text_top {
+            font-family: monospace;
+            dominant-baseline: middle;
+            text-anchor: middle;
+            fill: #438e9b;
+            stroke-width: 0;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .svg.value_top {
+            font-family: monospace;
+            dominant-baseline: middle;
+            text-anchor: middle;
+            fill: #438e9b;
+            stroke-width: 0;
+            font-size: 4rem;
+            font-weight: bold;
+        }
+
+        .svg.text_bottom {
+            font-family: monospace;
+            dominant-baseline: middle;
+            text-anchor: middle;
+            fill: #868532;
+            stroke-width: 0;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .svg.value_bottom {
+            font-family: monospace;
+            dominant-baseline: middle;
+            text-anchor: middle;
+            fill: #868532;
+            stroke-width: 0;
+            font-size: 3rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="compass_container">
+        <img src="./scale.svg" alt="Unit Circle" style="transform: rotate(0deg);">
+        <img src="./scaleTopMark.svg" alt="Unit Circle" style="transform: rotate(0deg); width: 110%; height: 110%;">
+        <img src="./scaleBottom.svg" alt="Unit Circle" style="transform: rotate(0deg); width: 109%; height: 109%;">
+
+        <svg class="scale_3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+            <defs>
+                <mask id="circlBottom">
+                    <rect width="600" height="600" fill="white" />
+                    <rect width="600" height="200" fill="black" />
+                </mask>
+                <mask id="circlTop">
+                    <rect width="600" height="600" fill="white" />
+                    <rect y="200" width="600" height="150" fill="black" />
+                </mask>
+            </defs>
+            <circle cx="200" cy="200" r="100" class="svg top" mask="url(#circlTop)" />
+            <circle cx="200" cy="200" r="100" class="svg bottom" mask="url(#circlBottom)" />
+            <text class="svg value_top" key="set" x="200" y="150">---</text>
+            <text class="svg text_top" x="200" y="190">Заданий кут</text>
+            <text class="svg text_bottom" x="200" y="213">Поточний кут</text>
+            <text class="svg value_bottom" key="current" key="set" x="200" y="250">---.--</text>
+
+        </svg>
+        <!-- <div class="div1">
+            <div class="set_angle">
+                <p key="set" class="angle_value">---</p>
+                <p class="angle_title">Заданий кут</p>
+            </div>
+            <div class="current_angle">
+                <p class="angle_title">Поточний кут</p>
+                <p key="current" class="angle_value"></p>
+            </div>
+        </div> -->
+    </div>
+
+    <script>
+        const topMark = document.querySelector('img[alt="Unit Circle"][src*="scaleTopMark"]');
+        const bottomMark = document.querySelector('img[alt="Unit Circle"][src*="scaleBottom"]');
+        const set = document.querySelector('[key="set"]');
+        const current = document.querySelector('[key="current"]');
+
+        function getRotation(el) {
+            const match = el.style.transform.match(/rotate\(([-\d.]+)deg\)/);
+            return match ? parseFloat(match[1]) % 360 : 0;
+        }
+
+        function setRotation(el, angle) {
+            if (angle < 0) angle = 359;
+            if (angle > 360) angle = 1;
+            el.style.transform = `rotate(${angle}deg)`;
+            return angle;
+        }
+
+        function getRandomAngle() {
+            return Math.floor(Math.random() * 360);
+        }
+
+        function getShortestDirection(from, to) {
+            from = (from + 360) % 360;
+            to = (to + 360) % 360;
+            const clockwise = (to - from + 360) % 360;
+            const counterClockwise = (from - to + 360) % 360;
+            return (clockwise <= counterClockwise) ? 1 : -1;
+        }
+
+        function rotateBottomTo(targetAngle) {
+            set.textContent = `${targetAngle}`;
+            const step = () => {
+                let currentAngle = getRotation(bottomMark);
+                let random = Math.random() * 1.34 - 0.67;
+                let result = currentAngle + Number(random.toFixed(1));
+                result = result < 0 ? 360 + result : result % 360;
+                current.textContent = `${result}`;
+                let direction = getShortestDirection(currentAngle, targetAngle);
+                currentAngle += direction;
+                currentAngle = setRotation(bottomMark, currentAngle);
+
+                if (currentAngle !== targetAngle) {
+                    setTimeout(step, 10);
+                } else {
+                    setTimeout(newRotation, 1000);
+                }
+            };
+            step();
+        }
+
+        function newRotation() {
+            const newAngle = getRandomAngle();
+            setRotation(topMark, newAngle);
+            rotateBottomTo(newAngle);
+        }
+
+        function startRotation() {
+            let currentAngle = getRotation(topMark);
+            rotateBottomTo(currentAngle);
+        }
+
+        window.addEventListener('load', startRotation);
+    </script>
+</body>
+
+</html>

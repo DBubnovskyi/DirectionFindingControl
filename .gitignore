@@ -1,7 +1,19 @@
 Software/DirectionFindingApp/SerialConnect/SerialConnect/obj/
 Software/DirectionFindingApp/SerialConnect/SerialConnect/bin/
 Software/DirectionFindingApp/SerialConnect/.vs/
-Hardware/WildDivision Refurbished/Remote/ESP32-WROOM-1/.vscode/
+
+Software/DirectionFindingApp/SerialConnect/SerialMonitor/obj/
+Software/DirectionFindingApp/SerialConnect/SerialMonitor/bin/
+
+Software/DirectionFindingApp/SerialConnect/TestApp/bin/
+Software/DirectionFindingApp/SerialConnect/TestApp/obj/
+
 Hardware/WildDivision Refurbished/Remote/ESP32-WROOM-1/.pio/
+Hardware/WildDivision Refurbished/Remote/ESP32-WROOM-1/.vscode/
+Hardware/WildDivision Refurbished/Remote/ESP32-S3-Pico/.vscode/
+Hardware/WildDivision Refurbished/Remote/ESP32-S3-Pico/backup/
+
 Hardware/WildDivision Refurbished/Rotator/ESP32C3 Super Mini/.pio/
 Hardware/WildDivision Refurbished/Rotator/ESP32C3 Super Mini/.vscode/
+Hardware/WildDivision Refurbished/Rotator/ESP32-S3-Zero/.pio/
+Hardware/WildDivision Refurbished/Rotator/ESP32-S3-Zero/.vscode/

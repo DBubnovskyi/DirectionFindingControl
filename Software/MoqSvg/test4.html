@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Одиничне коло</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #999;
+        }
+
+        .compass_container {
+            position: relative;
+            width: 42rem;
+            aspect-ratio: 1/1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .compass_container img {
+            position: absolute;
+            width: 80%;
+            height: 80%;
+        }
+
+        .div1 {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50%;
+            height: 50%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .div1 p {
+            margin: 0;
+        }
+
+        .angle_title {
+            font-size: 16px;
+            font-weight: bold;
+            line-height: 1.2;
+            text-align: center;
+        }
+
+        .angle_value {
+            font-size: 16px;
+            font-weight: bold;
+            line-height: 1;
+            text-align: center;
+        }
+
+        .div1 div {
+            width: 100%;
+            height: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 0.5vmin solid;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .div1 div.set_angle {
+            background: #76D9EB;
+            color: #438e9b;
+            border-color: #438e9b;
+            border-top-left-radius: 100% 200%;
+            border-top-right-radius: 100% 200%;
+            border-bottom: none;
+        }
+
+        .div1 div.current_angle {
+            background: #e0dd46;
+            color: #868532;
+            border-color: #868532;
+            border-bottom-left-radius: 100% 200%;
+            border-bottom-right-radius: 100% 200%;
+            border-top: none;
+        }
+
+        .svg.top {
+            fill: #76D9EB;
+            stroke: #438e9b;
+            stroke-width: 2;
+        }
+
+        .svg.bottom {
+            fill: #e0dd46;
+            stroke: #868532;
+            stroke-width: 2;
+        }
+
+        .svg.text_top {
+            font-family: monospace;
+            dominant-baseline: middle;
+            text-anchor: middle;
+            fill: #438e9b;
+            stroke-width: 0;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .svg.value_top {
+            font-family: monospace;
+            dominant-baseline: middle;
+            text-anchor: middle;
+            fill: #438e9b;
+            stroke-width: 0;
+            font-size: 4rem;
+            font-weight: bold;
+        }
+
+        .svg.text_bottom {
+            font-family: monospace;
+            dominant-baseline: middle;
+            text-anchor: middle;
+            fill: #868532;
+            stroke-width: 0;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .svg.value_bottom {
+            font-family: monospace;
+            dominant-baseline: middle;
+            text-anchor: middle;
+            fill: #868532;
+            stroke-width: 0;
+            font-size: 3rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="compass_container">
+        <img key="scale" src="./scale.svg" alt="Unit Circle" style="transform: rotate(0deg);">
+        <img key="scaleTopMark" src="./scaleTopMark.svg" alt="Unit Circle"
+            style="transform: rotate(0deg); width: 94%; height: 94%;">
+        <img key="scaleBottom" src="./scaleBottom.svg" alt="Unit Circle"
+            style="transform: rotate(0deg); width: 92%; height: 92%;">
+
+        <svg class="scale_3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+            <defs>
+                <mask id="circlBottom">
+                    <rect width="600" height="600" fill="white" />
+                    <rect width="600" height="200" fill="black" />
+                </mask>
+                <mask id="circlTop">
+                    <rect width="600" height="600" fill="white" />
+                    <rect y="200" width="600" height="150" fill="black" />
+                </mask>
+            </defs>
+            <circle cx="200" cy="200" r="100" class="svg top" mask="url(#circlTop)" />
+            <circle cx="200" cy="200" r="100" class="svg bottom" mask="url(#circlBottom)" />
+            <text class="svg value_top" key="set" x="200" y="150">---</text>
+            <text class="svg text_top" x="200" y="190">Заданий кут</text>
+            <text class="svg text_bottom" x="200" y="213">Поточний кут</text>
+            <text class="svg value_bottom" key="current" key="set" x="200" y="250">---.--</text>
+        </svg>
+    </div>
+    <script>
+        const topMark = document.querySelector('img[key="scaleTopMark"]');
+        const bottomMark = document.querySelector('img[key="scaleBottom"]');
+        const set = document.querySelector('[key="set"]');
+        const current = document.querySelector('[key="current"]');
+
+        function getRotation(el) {
+            const match = el.style.transform.match(/rotate\(([-\d.]+)deg\)/);
+            return match ? parseFloat(match[1]) % 360 : 0;
+        }
+
+        // ===== Функції допоміжних обчислень =====
+
+        function getRandomAngle() {
+            return Math.floor(Math.random() * 360);
+        }
+        function computeError(target, current) {
+            let error = target - current;
+            if (error > 180) error -= 360;
+            if (error < -180) error += 360;
+            return error;
+        }
+
+        function setRotation(el, angle) {
+            if (angle < 0) angle += 360;
+            if (angle >= 360) angle -= 360;
+            el.style.transform = `rotate(${angle}deg)`;
+            return angle;
+        }
+
+        function printAngle(targetAngle, currentAngle, error, initError, speed, startAngle) {
+            console.log(`Target:${targetAngle.toFixed(2)}  Current:${currentAngle.toFixed(2)}  Error:${error.toFixed(2)} ` +
+                ` InitError:${initError.toFixed(2)}  Speed:${speed.toFixed(2)}`);
+        }
+
+        function waveFunction(x) {
+            if (x > 1) return 1
+            const numerator = Math.sin(Math.PI * x / 2);
+            const denominator = Math.sin(Math.PI * 1 / 2);
+            const y = Math.pow(numerator / denominator, 2);
+            return y;
+        }
+
+        // ===== Симулятор руху мотора =====
+        let targetAngle = null;
+        let moving = false;
+        let startAngle = null;
+        const tolerance = 0.2; // °
+        const maxSpeed = 255;
+        const minSpeed = 175;
+
+        function moveToAngleSim(newTarget) {
+            set.innerHTML = parseInt(newTarget);
+            // просто оновлюємо ціль і стартові умови
+            targetAngle = ((newTarget % 360) + 360) % 360;
+            startAngle = getRotation(bottomMark);
+
+            if (!moving) {
+                moving = true;
+                step();
+            }
+        }
+
+        function step() {
+            if (targetAngle === null) return; // немає куди рухатись
+
+            let angle = getRotation(bottomMark);
+            current.innerHTML = angle.toFixed(1);
+            let error = computeError(targetAngle, angle);
+            let initError = computeError(angle, startAngle);
+
+            // розрахунок швидкості
+            let axelerationStart = getScaledValue(waveFunction(getScaledValue(Math.abs(error), 0, 30, 0, 1)), 0, 1, 0, maxSpeed - minSpeed);
+            let axelerationEnd = getScaledValue(waveFunction(getScaledValue(Math.abs(initError), 0, 30, 0, 1)), 0, 1, 0, maxSpeed - minSpeed);
+            let axeleration = Math.min(axelerationStart, axelerationEnd);
+            let speed = axeleration + minSpeed;
+
+            // напрямок
+            if ((error > 0 && !(targetAngle > 180 && startAngle < 180)) ||
+                (error < 0 && (targetAngle < 180 && startAngle > 180))) {
+                speed = -speed;
+            }
+
+            speed = Math.max(-255, Math.min(255, speed));
+            printAngle(targetAngle, angle, error, initError, speed, startAngle);
+
+            if (Math.abs(error) > tolerance) {
+                motorRotate(speed);
+                setTimeout(step, 2); // продовжуємо цикл
+            } else {
+                motorRotate(0);
+                moving = false; // зупиняємо, поки немає нової цілі
+            }
+        }
+
+
+        function motorRotate(speed) {
+            let currentAngle = getRotation(bottomMark);
+            let difAngle = getScaledValue(Math.abs(speed), 160, 255, 0, 42) / 100;
+            if (speed > 0) {
+                currentAngle -= difAngle;
+            } else {
+                currentAngle += difAngle;
+            }
+            setRotation(bottomMark, currentAngle);
+        }
+
+        function getScaledValue(value, sourceRangeMin, sourceRangeMax, targetRangeMin, targetRangeMax) {
+            var targetRange = targetRangeMax - targetRangeMin;
+            var sourceRange = sourceRangeMax - sourceRangeMin;
+            var result = ((value - sourceRangeMin) * targetRange / sourceRange) + targetRangeMin;
+            return result < 0 ? 0 : result;
+        }
+
+        function newRotation(newAngle) {
+            newAngle = newAngle === undefined ? getRandomAngle() : newAngle;
+            setRotation(topMark, newAngle);
+            moveToAngleSim(newAngle);
+        }
+
+        function startRotation() {
+            let currentAngle = getRotation(topMark);
+            moveToAngleSim(currentAngle);
+        }
+
+        window.addEventListener('load', startRotation);
+    </script>
+
+    <script>
+
+        window.addEventListener('load', () => {
+            const scaleImg = document.querySelector('.compass_container');
+            scaleImg.addEventListener('click', function (e) {
+                const rect = scaleImg.getBoundingClientRect();
+
+                // центр елемента
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+
+                // вектор від центру до точки кліку
+                const dx = e.clientX - centerX;
+                const dy = e.clientY - centerY;
+
+                // atan2 повертає кут у радіанах, 0 = вправо, зростання проти годинникової
+                let angleDeg = Math.atan2(dy, dx) * (180 / Math.PI);
+
+                // перетворюємо так, щоб 0° було вгору і зростало за годинниковою
+                angleDeg = (angleDeg + 450) % 360;
+
+                newRotation(parseFloat(angleDeg.toFixed(2)));
+            });
+        });
+    </script>
+
+</body>
+
+</html>

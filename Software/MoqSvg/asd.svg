@@ -1,0 +1,18 @@
+<svg width="320" height="320" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- Налаштування:
+       stroke — колір,
+       stroke-width — товщина "пікселів",
+       stroke-dasharray — довжина сегмента і проміжку -->
+    
+    <!-- Полігон з шириною 20 пікселів -->
+    <path d="M 44 140 A 80 80 0 0 1 160 60 L 160 60 A 70 70 0 0 0 51.93 132.93 Z"
+        fill="#d50000"
+        fill-opacity="0.7"
+        stroke="none"/>
+    
+    <!-- Оригінальна лінія для порівняння -->
+    <path d="M 44 140 A 80 80 0 0 1 160 60"
+        fill="none"
+        stroke="#d50000"
+        stroke-width="1"/>
+</svg>
