@@ -80,8 +80,8 @@
             numericAzScanStart = new NumericUpDown();
             panel2 = new Panel();
             groupBox2 = new GroupBox();
-            button9 = new Button();
             buttonAzRight = new Button();
+            buttonAzLeft = new Button();
             label12 = new Label();
             btnAz = new Button();
             numericUpDownAz = new NumericUpDown();
@@ -244,7 +244,7 @@
             // 
             // button5
             // 
-            button5.Location = new Point(224, 139);
+            button5.Location = new Point(234, 171);
             button5.Name = "button5";
             button5.Size = new Size(56, 23);
             button5.TabIndex = 9;
@@ -275,7 +275,7 @@
             // 
             // button4
             // 
-            button4.Location = new Point(162, 139);
+            button4.Location = new Point(162, 171);
             button4.Name = "button4";
             button4.Size = new Size(56, 23);
             button4.TabIndex = 8;
@@ -696,8 +696,8 @@
             // 
             // groupBox2
             // 
-            groupBox2.Controls.Add(button9);
             groupBox2.Controls.Add(buttonAzRight);
+            groupBox2.Controls.Add(buttonAzLeft);
             groupBox2.Controls.Add(label12);
             groupBox2.Controls.Add(btnAz);
             groupBox2.Controls.Add(numericUpDownAz);
@@ -709,27 +709,27 @@
             groupBox2.TabStop = false;
             groupBox2.Text = "Азимут";
             // 
-            // button9
-            // 
-            button9.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 204);
-            button9.Location = new Point(169, 35);
-            button9.Name = "button9";
-            button9.Size = new Size(84, 37);
-            button9.TabIndex = 4;
-            button9.Text = "Право";
-            button9.UseVisualStyleBackColor = true;
-            button9.Click += button9_Click;
-            // 
             // buttonAzRight
             // 
             buttonAzRight.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 204);
-            buttonAzRight.Location = new Point(6, 35);
+            buttonAzRight.Location = new Point(169, 35);
             buttonAzRight.Name = "buttonAzRight";
-            buttonAzRight.Size = new Size(89, 37);
-            buttonAzRight.TabIndex = 3;
-            buttonAzRight.Text = "Ліво";
+            buttonAzRight.Size = new Size(84, 37);
+            buttonAzRight.TabIndex = 4;
+            buttonAzRight.Text = "Право";
             buttonAzRight.UseVisualStyleBackColor = true;
-            buttonAzRight.Click += buttonAzRight_Click;
+            buttonAzRight.Click += button9_Click;
+            // 
+            // buttonAzLeft
+            // 
+            buttonAzLeft.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            buttonAzLeft.Location = new Point(6, 35);
+            buttonAzLeft.Name = "buttonAzLeft";
+            buttonAzLeft.Size = new Size(89, 37);
+            buttonAzLeft.TabIndex = 3;
+            buttonAzLeft.Text = "Ліво";
+            buttonAzLeft.UseVisualStyleBackColor = true;
+            buttonAzLeft.Click += buttonAzRight_Click;
             // 
             // label12
             // 
@@ -1065,7 +1065,7 @@
         private Panel panel4;
         private Label label27;
         private Button buttonRed;
-        private Button button9;
         private Button buttonAzRight;
+        private Button buttonAzLeft;
     }
 }
