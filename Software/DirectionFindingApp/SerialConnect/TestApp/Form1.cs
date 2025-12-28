@@ -140,9 +140,12 @@ namespace TestApp
                     StopScanning();
                 }
 
-                int azimuth = (int)numericUpDownAz.Value + value;
-                azimuth = azimuth > 359 ? 0 : azimuth < 0 ? 359 : azimuth;
-                SendCommand($"$AZ,{azimuth};");
+                if(float.TryParse(label12.Text, out float az))
+                {
+                    int azimuth = (int)az + value;
+                    azimuth = azimuth > 359 ? 0 : azimuth < 0 ? 359 : azimuth;
+                    SendCommand($"$AZ,{azimuth};");
+                }
             }
         }
 
@@ -1752,13 +1755,13 @@ namespace TestApp
 
         private void buttonAzRight_Click(object sender, EventArgs e)
         {
-            BtnAzSet(-1);
+            BtnAzSet(1);
         }
 
         private void button9_Click(object sender, EventArgs e)
         {
 
-            BtnAzSet(1);
+            BtnAzSet(-1);
         }
 
         private void label13_Click(object sender, EventArgs e)
