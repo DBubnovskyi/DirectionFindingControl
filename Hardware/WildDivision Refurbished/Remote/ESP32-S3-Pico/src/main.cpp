@@ -3,7 +3,7 @@
 #include "KeypadHandler.h"
 #include "SerialHandler.h"
 
-ScreenHandler *screenHandler = new ScreenHandler(4, 5);
+ScreenHandler *screenHandler = new ScreenHandler(4, 2);
 KeypadHandler *keypadHandler = new KeypadHandler();
 SerialHandler *serialHandler = new SerialHandler();
 HardwareSerial RS485Serial(1);
