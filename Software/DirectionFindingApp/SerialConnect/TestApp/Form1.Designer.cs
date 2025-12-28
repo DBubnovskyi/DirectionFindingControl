@@ -80,6 +80,8 @@
             numericAzScanStart = new NumericUpDown();
             panel2 = new Panel();
             groupBox2 = new GroupBox();
+            button9 = new Button();
+            buttonAzRight = new Button();
             label12 = new Label();
             btnAz = new Button();
             numericUpDownAz = new NumericUpDown();
@@ -100,8 +102,6 @@
             numericTolerance = new NumericUpDown();
             label15 = new Label();
             label14 = new Label();
-            buttonAzRight = new Button();
-            button9 = new Button();
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             groupBoxMap.SuspendLayout();
@@ -709,14 +709,36 @@
             groupBox2.TabStop = false;
             groupBox2.Text = "Азимут";
             // 
+            // button9
+            // 
+            button9.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            button9.Location = new Point(169, 35);
+            button9.Name = "button9";
+            button9.Size = new Size(84, 37);
+            button9.TabIndex = 4;
+            button9.Text = "Право";
+            button9.UseVisualStyleBackColor = true;
+            button9.Click += button9_Click;
+            // 
+            // buttonAzRight
+            // 
+            buttonAzRight.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            buttonAzRight.Location = new Point(6, 35);
+            buttonAzRight.Name = "buttonAzRight";
+            buttonAzRight.Size = new Size(89, 37);
+            buttonAzRight.TabIndex = 3;
+            buttonAzRight.Text = "Ліво";
+            buttonAzRight.UseVisualStyleBackColor = true;
+            buttonAzRight.Click += buttonAzRight_Click;
+            // 
             // label12
             // 
             label12.AutoSize = true;
-            label12.Location = new Point(101, 35);
+            label12.Location = new Point(96, 35);
             label12.Name = "label12";
-            label12.Size = new Size(53, 32);
+            label12.Size = new Size(71, 32);
             label12.TabIndex = 2;
-            label12.Text = "000";
+            label12.Text = "000.0";
             // 
             // btnAz
             // 
@@ -752,11 +774,12 @@
             // label13
             // 
             label13.AutoSize = true;
-            label13.Location = new Point(100, 35);
+            label13.Location = new Point(96, 35);
             label13.Name = "label13";
-            label13.Size = new Size(53, 32);
+            label13.Size = new Size(71, 32);
             label13.TabIndex = 3;
-            label13.Text = "000";
+            label13.Text = "000.0";
+            label13.Click += label13_Click;
             // 
             // btnAn
             // 
@@ -766,6 +789,7 @@
             btnAn.TabIndex = 2;
             btnAn.Text = "Задати";
             btnAn.UseVisualStyleBackColor = true;
+            btnAn.Click += btnAn_Click_1;
             // 
             // numericUpDownAn
             // 
@@ -920,28 +944,6 @@
             label14.Size = new Size(86, 21);
             label14.TabIndex = 3;
             label14.Text = "швидкість:";
-            // 
-            // buttonAzRight
-            // 
-            buttonAzRight.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 204);
-            buttonAzRight.Location = new Point(6, 35);
-            buttonAzRight.Name = "buttonAzRight";
-            buttonAzRight.Size = new Size(89, 37);
-            buttonAzRight.TabIndex = 3;
-            buttonAzRight.Text = "Ліво";
-            buttonAzRight.UseVisualStyleBackColor = true;
-            buttonAzRight.Click += buttonAzRight_Click;
-            // 
-            // button9
-            // 
-            button9.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 204);
-            button9.Location = new Point(169, 35);
-            button9.Name = "button9";
-            button9.Size = new Size(84, 37);
-            button9.TabIndex = 4;
-            button9.Text = "Право";
-            button9.UseVisualStyleBackColor = true;
-            button9.Click += button9_Click;
             // 
             // Form1
             // 

@@ -96,8 +96,6 @@ namespace TestApp
             richTextBox1.Text = "Serial Monitor Ready...\n";
 
             // Add event handlers for new buttons
-            btnAz.Click += BtnAz_Click;
-            btnAn.Click += BtnAn_Click;
 
             numericAzScanStart.ValueChanged += NumericAzScan_ValueChanged;
             numericAzScanEnd.ValueChanged += NumericAzScan_ValueChanged;
@@ -128,6 +126,22 @@ namespace TestApp
                 }
 
                 int azimuth = (int)numericUpDownAz.Value;
+                SendCommand($"$AZ,{azimuth};");
+            }
+        }
+
+        private void BtnAzSet(int value)
+        {
+            if (_isConnected)
+            {
+                // Stop scanning if active
+                if (_isScanning)
+                {
+                    StopScanning();
+                }
+
+                int azimuth = (int)numericUpDownAz.Value + value;
+                azimuth = azimuth > 359 ? 0 : azimuth < 0 ? 359 : azimuth;
                 SendCommand($"$AZ,{azimuth};");
             }
         }
@@ -1701,7 +1715,12 @@ namespace TestApp
 
         private void btnAz_Click_1(object sender, EventArgs e)
         {
+            BtnAz_Click(sender, e);
+        }
 
+        private void btnAn_Click_1(object sender, EventArgs e)
+        {
+            BtnAn_Click(sender, e);
         }
 
         private void buttonSettigsGet_Click(object sender, EventArgs e)
@@ -1733,10 +1752,16 @@ namespace TestApp
 
         private void buttonAzRight_Click(object sender, EventArgs e)
         {
-
+            BtnAzSet(-1);
         }
 
         private void button9_Click(object sender, EventArgs e)
+        {
+
+            BtnAzSet(1);
+        }
+
+        private void label13_Click(object sender, EventArgs e)
         {
 
         }
