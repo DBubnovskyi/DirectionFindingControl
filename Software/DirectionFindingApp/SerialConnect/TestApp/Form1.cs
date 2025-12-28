@@ -62,6 +62,8 @@ namespace TestApp
         private GMapRoute? _mousePreviewLine = null;
         private ToolTip _mapToolTip = new ToolTip();
         private readonly Pen _mousePreviewPen = new Pen(Color.Blue, 1) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash };
+        private List<GMapRoute> _savedBearingLines = new List<GMapRoute>();
+        private List<GMapPolygon> _savedBearingPolygons = new List<GMapPolygon>();
 
         public Form1()
         {
@@ -106,6 +108,8 @@ namespace TestApp
             radioButton2.CheckedChanged += RadioButton_CheckedChanged;
 
             buttonScan.Click += ButtonScan_Click;
+            buttonSaveAz.Click += ButtonSaveAz_Click;
+            buttonClearAz.Click += ButtonClearAz_Click;
 
             // Connect settings buttons
             buttonSettigsGet.Click += ButtonSettingsGet_Click;
@@ -1766,6 +1770,61 @@ namespace TestApp
         private void label13_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void ButtonSaveAz_Click(object? sender, EventArgs e)
+        {
+            if (_stationMarker == null || _routesOverlay == null) return;
+
+            try
+            {
+                // Отримуємо поточний азимут з label12
+                if (float.TryParse(label12.Text, out float azimuth))
+                {
+                    // Обчислюємо кінцеву точку лінії на відстані 150 км
+                    PointLatLng startPoint = _stationMarker.Position;
+                    PointLatLng endPoint = CalculateDestinationPoint(startPoint, azimuth, 150.0);
+
+                    // Створюємо нову пунктирну напівпрозору лінію для збереженого пеленгу
+                    List<PointLatLng> points = new List<PointLatLng> { startPoint, endPoint };
+                    GMapRoute savedLine = new GMapRoute(points, $"saved_azimuth_{azimuth:000.0}");
+                    
+                    // Напівпрозорий червоний колір (128 = 50% прозорості)
+                    Pen dashedPen = new Pen(Color.FromArgb(128, Color.Red), 2);
+                    dashedPen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+                    savedLine.Stroke = dashedPen;
+
+                    _routesOverlay.Routes.Add(savedLine);
+                    _savedBearingLines.Add(savedLine);
+
+                    gMapControl1.Refresh();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in ButtonSaveAz_Click: {ex.Message}");
+            }
+        }
+
+        private void ButtonClearAz_Click(object? sender, EventArgs e)
+        {
+            if (_routesOverlay == null) return;
+
+            try
+            {
+                // Видаляємо всі збережені лінії пеленгів
+                foreach (var line in _savedBearingLines)
+                {
+                    _routesOverlay.Routes.Remove(line);
+                }
+                _savedBearingLines.Clear();
+
+                gMapControl1.Refresh();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in ButtonClearAz_Click: {ex.Message}");
+            }
         }
     }
 }

@@ -51,6 +51,8 @@
             label1 = new Label();
             button1 = new Button();
             groupBoxMap = new GroupBox();
+            buttonClearAz = new Button();
+            buttonSaveAz = new Button();
             buttonRed = new Button();
             panel4 = new Panel();
             label27 = new Label();
@@ -267,9 +269,9 @@
             label6.AutoSize = true;
             label6.Font = new Font("Segoe UI", 8F);
             label6.Location = new Point(162, 71);
-            label6.MaximumSize = new Size(150, 0);
+            label6.MaximumSize = new Size(140, 0);
             label6.Name = "label6";
-            label6.Size = new Size(149, 65);
+            label6.Size = new Size(131, 78);
             label6.TabIndex = 7;
             label6.Text = "Поправкою необхідно виставити антену в нульове положення, якщо після попереднього кроку є відхилення";
             // 
@@ -365,6 +367,8 @@
             // 
             groupBoxMap.Controls.Add(buttonRed);
             groupBoxMap.Controls.Add(panel4);
+            groupBoxMap.Controls.Add(buttonClearAz);
+            groupBoxMap.Controls.Add(buttonSaveAz);
             groupBoxMap.Controls.Add(buttonSetCoords);
             groupBoxMap.Controls.Add(gMapControl1);
             groupBoxMap.Dock = DockStyle.Fill;
@@ -374,6 +378,29 @@
             groupBoxMap.TabIndex = 9;
             groupBoxMap.TabStop = false;
             groupBoxMap.Text = "Мапа";
+            // 
+            // buttonClearAz
+            // 
+            buttonClearAz.BackColor = Color.SandyBrown;
+            buttonClearAz.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            buttonClearAz.Location = new Point(9, 138);
+            buttonClearAz.Name = "buttonClearAz";
+            buttonClearAz.Size = new Size(182, 30);
+            buttonClearAz.TabIndex = 5;
+            buttonClearAz.Text = "Очисти пеленги";
+            buttonClearAz.UseVisualStyleBackColor = false;
+            // 
+            // buttonSaveAz
+            // 
+            buttonSaveAz.BackColor = SystemColors.ActiveCaption;
+            buttonSaveAz.CausesValidation = false;
+            buttonSaveAz.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            buttonSaveAz.Location = new Point(6, 102);
+            buttonSaveAz.Name = "buttonSaveAz";
+            buttonSaveAz.Size = new Size(182, 30);
+            buttonSaveAz.TabIndex = 4;
+            buttonSaveAz.Text = "Зберегти пеленг";
+            buttonSaveAz.UseVisualStyleBackColor = false;
             // 
             // buttonRed
             // 
@@ -401,9 +428,9 @@
             // 
             label27.AutoSize = true;
             label27.Location = new Point(3, 0);
-            label27.MaximumSize = new Size(200, 0);
+            label27.MaximumSize = new Size(180, 0);
             label27.Name = "label27";
-            label27.Size = new Size(182, 45);
+            label27.Size = new Size(179, 45);
             label27.TabIndex = 0;
             label27.Text = "Клік правою кнопкою миші по карті задає азтмут куди буде повернуто антену";
             label27.Click += label27_Click;
@@ -1067,5 +1094,7 @@
         private Button buttonRed;
         private Button buttonAzRight;
         private Button buttonAzLeft;
+        private Button buttonSaveAz;
+        private Button buttonClearAz;
     }
 }
