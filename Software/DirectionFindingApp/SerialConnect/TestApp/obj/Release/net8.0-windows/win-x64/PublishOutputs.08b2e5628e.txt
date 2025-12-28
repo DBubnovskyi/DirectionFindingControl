@@ -1,4 +1,0 @@
-D:\Projects\DirectionFinding\DirectionFindingControl\Software\DirectionFindingApp\SerialConnect\TestApp\bin\Release\net8.0-windows\publish\TestApp.pdb
-D:\Projects\DirectionFinding\DirectionFindingControl\Software\DirectionFindingApp\SerialConnect\TestApp\bin\Release\net8.0-windows\publish\SerialConnect.pdb
-D:\Projects\DirectionFinding\DirectionFindingControl\Software\DirectionFindingApp\SerialConnect\TestApp\bin\Release\net8.0-windows\publish\SerialMonitor.pdb
-D:\Projects\DirectionFinding\DirectionFindingControl\Software\DirectionFindingApp\SerialConnect\TestApp\bin\Release\net8.0-windows\publish\TestApp.exe

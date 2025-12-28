@@ -100,6 +100,8 @@
             numericTolerance = new NumericUpDown();
             label15 = new Label();
             label14 = new Label();
+            buttonAzRight = new Button();
+            button9 = new Button();
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             groupBoxMap.SuspendLayout();
@@ -694,6 +696,8 @@
             // 
             // groupBox2
             // 
+            groupBox2.Controls.Add(button9);
+            groupBox2.Controls.Add(buttonAzRight);
             groupBox2.Controls.Add(label12);
             groupBox2.Controls.Add(btnAz);
             groupBox2.Controls.Add(numericUpDownAz);
@@ -917,6 +921,28 @@
             label14.TabIndex = 3;
             label14.Text = "швидкість:";
             // 
+            // buttonAzRight
+            // 
+            buttonAzRight.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            buttonAzRight.Location = new Point(6, 35);
+            buttonAzRight.Name = "buttonAzRight";
+            buttonAzRight.Size = new Size(89, 37);
+            buttonAzRight.TabIndex = 3;
+            buttonAzRight.Text = "Ліво";
+            buttonAzRight.UseVisualStyleBackColor = true;
+            buttonAzRight.Click += buttonAzRight_Click;
+            // 
+            // button9
+            // 
+            button9.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            button9.Location = new Point(169, 35);
+            button9.Name = "button9";
+            button9.Size = new Size(84, 37);
+            button9.TabIndex = 4;
+            button9.Text = "Право";
+            button9.UseVisualStyleBackColor = true;
+            button9.Click += button9_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -1037,5 +1063,7 @@
         private Panel panel4;
         private Label label27;
         private Button buttonRed;
+        private Button button9;
+        private Button buttonAzRight;
     }
 }
