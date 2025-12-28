@@ -1755,12 +1755,12 @@ namespace TestApp
 
         private void buttonAzRight_Click(object sender, EventArgs e)
         {
-            BtnAzSet(-1);
+            BtnAzSet(-2);
         }
 
         private void button9_Click(object sender, EventArgs e)
         {
-            BtnAzSet(1);
+            BtnAzSet(2);
         }
 
         private void label13_Click(object sender, EventArgs e)
