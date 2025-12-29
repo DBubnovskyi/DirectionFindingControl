@@ -1,0 +1,24 @@
+directories:
+  output: publish
+  buildResources: build
+appId: com.directionfinding.control
+productName: DirectionFindingControl
+win:
+  target: dir
+  signAndEditExecutable: false
+files:
+  - filter:
+      - '**/*'
+      - '!node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}'
+      - '!node_modules/*/{test,__tests__,tests,powered-test,example,examples}'
+      - '!node_modules/*.d.ts'
+      - '!node_modules/.bin'
+      - '!node_modules/electron-reload'
+      - '!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}'
+      - '!.editorconfig'
+      - '!**/._*'
+      - '!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}'
+      - '!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}'
+      - '!**/{appveyor.yml,.travis.yml,circle.yml}'
+      - '!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}'
+electronVersion: 28.3.3

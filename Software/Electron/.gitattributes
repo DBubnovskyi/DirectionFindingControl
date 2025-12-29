@@ -1,0 +1,6 @@
+Software/Electron/publish/**/*.exe filter=lfs diff=lfs merge=lfs -text
+Software/Electron/publish/**/*.dll filter=lfs diff=lfs merge=lfs -text
+Software/Electron/publish/**/*.asar filter=lfs diff=lfs merge=lfs -text
+publish/**/*.exe filter=lfs diff=lfs merge=lfs -text
+publish/**/*.dll filter=lfs diff=lfs merge=lfs -text
+publish/**/*.asar filter=lfs diff=lfs merge=lfs -text

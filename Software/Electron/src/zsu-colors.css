@@ -1,0 +1,97 @@
+/* Офіційні кольори з брендбуку Збройних Сил України */
+
+:root {
+  /* Колір ЗСУ - "Мундир" */
+  --zsu-mundyr: #4D4634;
+  
+  /* Колір ПС ЗСУ - "Грозове небо" */
+  --ps-zsu-grozove-nebo: #293757;
+  
+  /* Колір ВМС ЗСУ - "Ескадра" */
+  --vms-zsu-eskadra: #111224;
+  
+  /* Колір ССО ЗСУ - "Сталь" */
+  --sso-zsu-stal: #707276;
+  
+  /* Колір МП ВМС ЗСУ - "Морська хвиля" */
+  --mp-vms-zsu-morska-hvylya: #035C6B;
+  
+  /* Колір ДШВ ЗСУ - "Марун" */
+  --dshv-zsu-marun: #671318;
+  
+  /* Колір СТрО ЗСУ - "Олива" */
+  --stro-zsu-olyva: #444A38;
+  
+  /* Допоміжний колір - "Золото" */
+  --zsu-zoloto: #F39200;
+  
+  /* Колір СВ ЗСУ - "Степ" */
+  --sv-zsu-step: #6A653A;
+  
+  /* Національні кольори України */
+  --ua-blue: #0057B7;
+  --ua-yellow: #FFD700;
+}
+
+/* Тематичні палітри для різних режимів */
+
+/* Тема ЗСУ (Сухопутні війська) */
+.zsu-theme {
+  --bg-primary: var(--zsu-mundyr);
+  --bg-secondary: var(--sv-zsu-step);
+  --text-primary: #E8E8E8;
+  --text-secondary: #B8B8B8;
+  --accent: var(--zsu-zoloto);
+  --border: var(--sso-zsu-stal);
+}
+
+/* Тема Повітряних Сил */
+.ps-theme {
+  --bg-primary: var(--ps-zsu-grozove-nebo);
+  --bg-secondary: var(--zsu-mundyr);
+  --text-primary: #FFFFFF;
+  --text-secondary: #B8B8B8;
+  --accent: var(--zsu-zoloto);
+  --border: var(--sso-zsu-stal);
+}
+
+/* Тема Військово-Морських Сил */
+.vms-theme {
+  --bg-primary: var(--vms-zsu-eskadra);
+  --bg-secondary: var(--mp-vms-zsu-morska-hvylya);
+  --text-primary: #FFFFFF;
+  --text-secondary: #B8B8B8;
+  --accent: var(--zsu-zoloto);
+  --border: var(--sso-zsu-stal);
+}
+
+/* Тема Сил Спеціальних Операцій */
+.sso-theme {
+  --bg-primary: var(--sso-zsu-stal);
+  --bg-secondary: var(--zsu-mundyr);
+  --text-primary: #FFFFFF;
+  --text-secondary: #E8E8E8;
+  --accent: var(--zsu-zoloto);
+  --border: var(--vms-zsu-eskadra);
+}
+
+/* Тема Десантно-Штурмових Військ */
+.dshv-theme {
+  --bg-primary: var(--dshv-zsu-marun);
+  --bg-secondary: var(--zsu-mundyr);
+  --text-primary: #FFFFFF;
+  --text-secondary: #E8E8E8;
+  --accent: var(--zsu-zoloto);
+  --border: var(--sso-zsu-stal);
+}
+
+/* Тема Сил Територіальної Оборони */
+.stro-theme {
+  --bg-primary: var(--stro-zsu-olyva);
+  --bg-secondary: var(--sv-zsu-step);
+  --text-primary: #E8E8E8;
+  --text-secondary: #B8B8B8;
+  --accent: var(--zsu-zoloto);
+  --border: var(--sso-zsu-stal);
+}
+

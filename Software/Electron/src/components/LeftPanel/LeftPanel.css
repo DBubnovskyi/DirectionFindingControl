@@ -1,0 +1,8 @@
+.left-panel {
+  width: 600px;
+  height: 100vh;
+  background: #1a1b1e;
+  border-right: 1px solid #373a40;
+  overflow-y: auto;
+  padding: 20px;
+}
