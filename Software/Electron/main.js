@@ -1,5 +1,6 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const { SerialPort } = require('serialport');
 
 // Live reload в режимі розробки
 try {
@@ -8,8 +9,22 @@ try {
     hardResetMethod: 'exit'
   });
 } catch (err) {
-  // electron-reload не доступний в production білді
+  // electron-reload не доступній в production білді
 }
+
+// IPC handlers для серійних портів
+ipcMain.handle('serial:list-ports', async () => {
+  try {
+    const ports = await SerialPort.list();
+    return ports.map(port => ({
+      value: port.path,
+      label: `${port.path}${port.friendlyName ? ` - ${port.friendlyName}` : ''}`
+    }));
+  } catch (error) {
+    console.error('Error listing serial ports:', error);
+    return [];
+  }
+});
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -18,7 +33,8 @@ function createWindow() {
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
     }
   });
 

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Одиничне коло</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #999;
+        }
+
+        .compass_container {
+            position: relative;
+            width: 42rem;
+            aspect-ratio: 1/1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .compass_container img,
+        .compass_container object {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            pointer-events: all;
+        }
+
+        .div1 {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50%;
+            height: 50%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .div1 p {
+            margin: 0;
+        }
+
+        .angle_title {
+            font-size: 16px;
+            font-weight: bold;
+            line-height: 1.2;
+            text-align: center;
+        }
+
+        .angle_value {
+            font-size: 16px;
+            font-weight: bold;
+            line-height: 1;
+            text-align: center;
+        }
+
+        .div1 div {
+            width: 100%;
+            height: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 0.5vmin solid;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .div1 div.set_angle {
+            background: #76D9EB;
+            color: #438e9b;
+            border-color: #438e9b;
+            border-top-left-radius: 100% 200%;
+            border-top-right-radius: 100% 200%;
+            border-bottom: none;
+        }
+
+        .div1 div.current_angle {
+            background: #e0dd46;
+            color: #868532;
+            border-color: #868532;
+            border-bottom-left-radius: 100% 200%;
+            border-bottom-right-radius: 100% 200%;
+            border-top: none;
+        }
+
+        .svg.top {
+            fill: #76D9EB;
+            stroke: #438e9b;
+            stroke-width: 2;
+        }
+
+        .svg.bottom {
+            fill: #e0dd46;
+            stroke: #868532;
+            stroke-width: 2;
+        }
+
+        .svg.text_top {
+            font-family: monospace;
+            dominant-baseline: middle;
+            text-anchor: middle;
+            fill: #438e9b;
+            stroke-width: 0;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .svg.value_top {
+            font-family: monospace;
+            dominant-baseline: middle;
+            text-anchor: middle;
+            fill: #438e9b;
+            stroke-width: 0;
+            font-size: 3rem;
+            font-weight: bold;
+        }
+
+        .svg.text_bottom {
+            font-family: monospace;
+            dominant-baseline: middle;
+            text-anchor: middle;
+            fill: #868532;
+            stroke-width: 0;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .svg.value_bottom {
+            font-family: monospace;
+            dominant-baseline: middle;
+            text-anchor: middle;
+            fill: #868532;
+            stroke-width: 0;
+            font-size: 3rem;
+            font-weight: bold;
+        }
+
+        /* Спільні стилі для інтерактивних SVG елементів */
+        .svg_interactive_rect {
+            stroke-width: 1;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .svg_interactive_rect:hover {
+            fill: #2c3f44;
+        }
+
+        .svg_label_text {
+            font-family: monospace;
+            font-size: 12px;
+            fill: #ccc;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+        }
+
+        .azimuth_rect {
+            fill: #333;
+        }
+
+        .angle_rect {
+            fill: #3A3A33;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="compass_container">
+        <img key="scale" src="./scale v2.svg" alt="Unit Circle" style="transform: rotate(0deg);">
+        <img key="scaleAngle" src="./scale v2 angle.svg" alt="Unit Circle" style="transform: rotate(0deg);">
+
+        <img key="scaleBottom" src="./scaleTopMark2.svg" alt="Unit Circle"
+            style="transform: rotate(0deg); width: 94%; height: 94%;">
+        <img key="scaleTopMark" src="./scaleBottom.svg" alt="Unit Circle"
+            style="transform: rotate(0deg); width: 92%; height: 92%;">
+
+        <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"
+            style="transform: rotate(0deg); position: absolute; width: 100%; height: 100%; pointer-events: none;">
+            <g transform="translate(50, 50)">
+                <path key="setAzimuth" class="azimuth_rect svg_interactive_rect"
+                    d=" M 160,77 A 6,1.7 0 0,0 240,77 A 3,0.6 0 0,0 160,77" />
+                <text x="200" y="80" class="svg_label_text">азимут</text>
+            </g>
+        </svg>
+
+        <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"
+            style="transform: rotate(0deg); position: absolute; width: 100%; height: 100%; pointer-events: none;">
+            <g transform="translate(50, 50)">
+                <path key="setAngle" class="angle_rect svg_interactive_rect"
+                    d=" M 160,-14 A 5,2.6 0 0,1 240,-14 A 13,1.5 0 0,0 160,-14" />
+                <text x="200" y="-28" class="svg_label_text">кут</text>
+            </g>
+        </svg>
+
+        <svg class="scale_3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+            <defs>
+                <mask id="circlBottom">
+                    <rect width="600" height="600" fill="white" />
+                    <rect width="600" height="200" fill="black" />
+                </mask>
+                <mask id="circlTop">
+                    <rect width="600" height="600" fill="white" />
+                    <rect y="200" width="600" height="150" fill="black" />
+                </mask>
+            </defs>
+            <circle cx="200" cy="200" r="100" class="svg top" mask="url(#circlTop)" />
+            <circle cx="200" cy="200" r="100" class="svg bottom" mask="url(#circlBottom)" />
+            <text class="svg value_top" key="current" x="200" y="160">---.--</text>
+            <text class="svg text_top" x="200" y="190">Поточний азимут</text>
+            <text class="svg text_bottom" x="200" y="213">Заданий азимут</text>
+            <text class="svg value_bottom" key="set" x="200" y="250">---</text>
+        </svg>
+    </div>
+    <script>
+        let delta = 45;
+        const topMark = document.querySelector('img[key="scaleTopMark"]');
+        const bottomMark = document.querySelector('img[key="scaleBottom"]');
+        const scale = document.querySelector('img[key="scale"]');
+        const scaleAngle = document.querySelector('img[key="scaleAngle"]');
+        const set = document.querySelector('[key="set"]');
+        const current = document.querySelector('[key="current"]');
+        const setAngle = document.querySelector('path[key="setAngle"]');
+        const setAzimuth = document.querySelector('path[key="setAzimuth"]');
+
+        scaleAngle.style.transform = `rotate(${delta}deg)`;
+
+        function getRotation(el) {
+            const match = el.style.transform.match(/rotate\(([-\d.]+)deg\)/);
+            return match ? parseFloat(match[1]) % 360 : 0;
+        }
+
+        // ===== Функції допоміжних обчислень =====
+
+        setAngle.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            const angle = parseInt(scaleAngle.style.transform.replace('rotate(', ''), 10);
+            if (angle === 0) {
+                return
+            }
+
+            scaleAngle.style.transform = `rotate(${0}deg)`;
+            scale.style.transform = `rotate(${delta}deg)`;
+
+            // const top = parseInt(topMark.style.transform.replace('rotate(', ''), 10);
+            // const bottom = parseInt(bottomMark.style.transform.replace('rotate(', ''), 10);
+            // topMark.style.transform = `rotate(${top + delta}deg)`;
+            // bottomMark.style.transform = `rotate(${bottom + delta}deg)`;
+        });
+
+        setAzimuth.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            const angle = parseInt(scale.style.transform.replace('rotate(', ''), 10);
+            if (angle === 0) {
+                return
+            }
+
+            scaleAngle.style.transform = `rotate(${-delta}deg)`;
+            scale.style.transform = `rotate(${0}deg)`;
+
+            // const top = parseInt(topMark.style.transform.replace('rotate(', ''), 10);
+            // const bottom = parseInt(bottomMark.style.transform.replace('rotate(', ''), 10);
+            // topMark.style.transform = `rotate(${top - delta}deg)`;
+            // bottomMark.style.transform = `rotate(${bottom - delta}deg)`;
+        });
+
+        function getRandomAngle() {
+            return Math.floor(Math.random() * 360);
+        }
+
+        // Нормалізація кута в діапазон [0, 360)
+        function normalizeAngle(angle) {
+            angle = angle % 360;
+            if (angle < 0) angle += 360;
+            return angle;
+        }
+
+        // Перевірка чи кут знаходиться в забороненій зоні
+        function isInscaleAngle(angle, forbiddenCenter, forbiddenWidth = 10) {
+            angle = normalizeAngle(angle);
+            forbiddenCenter = normalizeAngle(forbiddenCenter);
+
+            const halfWidth = forbiddenWidth / 2;
+            const zoneStart = normalizeAngle(forbiddenCenter - halfWidth);
+            const zoneEnd = normalizeAngle(forbiddenCenter + halfWidth);
+
+            if (zoneStart < zoneEnd) {
+                return angle >= zoneStart && angle <= zoneEnd;
+            } else {
+                // заборонена зона переходить через 0°
+                return angle >= zoneStart || angle <= zoneEnd;
+            }
+        }
+
+        // Перетворення азимута в кут антени
+        function azimuthToAntennaAngle(azimuth, currentAntennaAngle, forbiddenCenter) {
+            azimuth = normalizeAngle(azimuth);
+            currentAntennaAngle = normalizeAngle(currentAntennaAngle);
+            forbiddenCenter = normalizeAngle(forbiddenCenter);
+
+            // Якщо азимут не в забороненій зоні, антена може бути в тому ж куті
+            if (!isInscaleAngle(azimuth, forbiddenCenter)) {
+                return azimuth;
+            }
+
+            // Азимут в забороненій зоні - потрібно знайти найближчу доступну позицію
+            const halfWidth = 5;
+            const zoneStart = normalizeAngle(forbiddenCenter - halfWidth);
+            const zoneEnd = normalizeAngle(forbiddenCenter + halfWidth);
+
+            // Визначаємо відстань до країв зони
+            const distToStart = computeShortestDistance(azimuth, zoneStart);
+            const distToEnd = computeShortestDistance(azimuth, zoneEnd);
+
+            return distToStart < distToEnd ? zoneStart : zoneEnd;
+        }
+
+        // Найкоротша відстань між двома кутами
+        function computeShortestDistance(angle1, angle2) {
+            angle1 = normalizeAngle(angle1);
+            angle2 = normalizeAngle(angle2);
+            const diff = Math.abs(angle1 - angle2);
+            return Math.min(diff, 360 - diff);
+        }
+
+        // Обчислення помилки з урахуванням забороненої зони
+        function computeErrorWithscaleAngle(target, current, forbiddenCenter) {
+            target = normalizeAngle(target);
+            current = normalizeAngle(current);
+            forbiddenCenter = normalizeAngle(forbiddenCenter);
+
+            // Два можливі шляхи: за годинниковою і проти
+            let errorCW = target - current;
+            if (errorCW < 0) errorCW += 360;
+
+            let errorCCW = current - target;
+            if (errorCCW < 0) errorCCW += 360;
+
+            // Перевіряємо чи шлях за годинниковою проходить через заборонену зону
+            let pathCWBlocked = false;
+            for (let i = 0; i <= errorCW; i += 1) {
+                if (isInscaleAngle(normalizeAngle(current + i), forbiddenCenter)) {
+                    pathCWBlocked = true;
+                    break;
+                }
+            }
+
+            // Перевіряємо чи шлях проти годинникової проходить через заборонену зону
+            let pathCCWBlocked = false;
+            for (let i = 0; i <= errorCCW; i += 1) {
+                if (isInscaleAngle(normalizeAngle(current - i), forbiddenCenter)) {
+                    pathCCWBlocked = true;
+                    break;
+                }
+            }
+
+            // Вибираємо найкращий шлях
+            if (pathCWBlocked && !pathCCWBlocked) {
+                return -errorCCW; // йдемо проти годинникової
+            } else if (!pathCWBlocked && pathCCWBlocked) {
+                return errorCW; // йдемо за годинниковою
+            } else if (!pathCWBlocked && !pathCCWBlocked) {
+                // обидва шляхи вільні - вибираємо коротший
+                return errorCW < errorCCW ? errorCW : -errorCCW;
+            } else {
+                // обидва шляхи заблоковані - щось не так
+                console.error('Both paths blocked!');
+                return 0;
+            }
+        }
+
+        function computeError(target, current) {
+            let error = target - current;
+            if (error > 180) error -= 360;
+            if (error < -180) error += 360;
+            return error;
+        }
+
+        function setRotation(el, angle) {
+            if (angle < 0) angle += 360;
+            if (angle >= 360) angle -= 360;
+            el.style.transform = `rotate(${angle}deg)`;
+            return angle;
+        }
+
+        function printAngle(targetAngle, currentAngle, error, initError, speed, startAngle) {
+            console.log(`Target:${targetAngle.toFixed(2)}  Current:${currentAngle.toFixed(2)}  Error:${error.toFixed(2)} ` +
+                ` InitError:${initError.toFixed(2)}  Speed:${speed.toFixed(2)}`);
+        }
+
+        function waveFunction(x) {
+            if (x > 1) return 1
+            const numerator = Math.sin(Math.PI * x / 2);
+            const denominator = Math.sin(Math.PI * 1 / 2);
+            const y = Math.pow(numerator / denominator, 2);
+            return y;
+        }
+
+        // ===== Симулятор руху мотора =====
+        let targetAzimuth = null;  // заданий азимут
+        let targetAngle = null;     // цільовий кут антени
+        let moving = false;
+        let startAngle = null;
+        const tolerance = 0.2; // °
+        const maxSpeed = 255;
+        const minSpeed = 175;
+
+        function moveToAzimuth(newAzimuth) {
+            set.innerHTML = parseInt(newAzimuth);
+
+            // зберігаємо заданий азимут
+            targetAzimuth = normalizeAngle(newAzimuth);
+
+            // отримуємо кут забороненої зони
+            // SVG повернутий так, що трикутник вказує на 180° відносно обертання
+            const forbiddenCenter = normalizeAngle(getRotation(scaleAngle) + 180);
+
+            // перетворюємо азимут в кут антени з урахуванням забороненої зони
+            targetAngle = azimuthToAntennaAngle(targetAzimuth, getRotation(bottomMark), forbiddenCenter);
+
+            startAngle = getRotation(bottomMark);
+
+            console.log(`New azimuth: ${targetAzimuth.toFixed(2)}°, Antenna target: ${targetAngle.toFixed(2)}°, Forbidden: ${forbiddenCenter.toFixed(2)}°`);
+
+            if (!moving) {
+                moving = true;
+                step();
+            }
+        }
+
+        function step() {
+            if (targetAngle === null) return; // немає куди рухатись
+
+            let angle = getRotation(bottomMark);
+            current.innerHTML = angle.toFixed(1);
+
+            // отримуємо кут забороненої зони
+            // SVG повернутий так, що трикутник вказує на 180° відносно обертання
+            const forbiddenCenter = normalizeAngle(getRotation(scaleAngle) + 180);
+
+            // обчислюємо помилку з урахуванням забороненої зони
+            let error = computeErrorWithscaleAngle(targetAngle, angle, forbiddenCenter);
+            let initError = computeError(angle, startAngle);
+
+            // розрахунок швидкості
+            let axelerationStart = getScaledValue(waveFunction(getScaledValue(Math.abs(error), 0, 30, 0, 1)), 0, 1, 0, maxSpeed - minSpeed);
+            let axelerationEnd = getScaledValue(waveFunction(getScaledValue(Math.abs(initError), 0, 30, 0, 1)), 0, 1, 0, maxSpeed - minSpeed);
+            let axeleration = Math.min(axelerationStart, axelerationEnd);
+            let speed = axeleration + minSpeed;
+
+            // напрямок руху
+            if (error > 0) {
+                speed = -speed; // за годинниковою
+            }
+
+            speed = Math.max(-255, Math.min(255, speed));
+            printAngle(targetAngle, angle, error, initError, speed, startAngle);
+
+            if (Math.abs(error) > tolerance) {
+                motorRotate(speed);
+                setTimeout(step, 2); // продовжуємо цикл
+            } else {
+                motorRotate(0);
+                moving = false; // зупиняємо, поки немає нової цілі
+            }
+        }
+
+
+        function motorRotate(speed) {
+            let currentAngle = getRotation(bottomMark);
+            let difAngle = getScaledValue(Math.abs(speed), 160, 255, 0, 42) / 100;
+            if (speed > 0) {
+                currentAngle -= difAngle;
+            } else {
+                currentAngle += difAngle;
+            }
+            setRotation(bottomMark, currentAngle);
+        }
+
+        function getScaledValue(value, sourceRangeMin, sourceRangeMax, targetRangeMin, targetRangeMax) {
+            var targetRange = targetRangeMax - targetRangeMin;
+            var sourceRange = sourceRangeMax - sourceRangeMin;
+            var result = ((value - sourceRangeMin) * targetRange / sourceRange) + targetRangeMin;
+            return result < 0 ? 0 : result;
+        }
+
+        function newRotation(newAzimuth) {
+            newAzimuth = newAzimuth === undefined ? getRandomAngle() : newAzimuth;
+            setRotation(topMark, newAzimuth);
+            moveToAzimuth(newAzimuth);
+        }
+
+        function startRotation() {
+            let currentAzimuth = getRotation(topMark);
+            moveToAzimuth(currentAzimuth);
+        }
+
+        window.addEventListener('load', startRotation);
+    </script>
+
+    <script>
+
+        window.addEventListener('load', () => {
+            const scaleImg = document.querySelector('.compass_container');
+            scaleImg.addEventListener('click', function (e) {
+                const rect = scaleImg.getBoundingClientRect();
+
+                // центр елемента
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+
+                // вектор від центру до точки кліку
+                const dx = e.clientX - centerX;
+                const dy = e.clientY - centerY;
+
+                // atan2 повертає кут у радіанах, 0 = вправо, зростання проти годинникової
+                let angleDeg = Math.atan2(dy, dx) * (180 / Math.PI);
+
+                // перетворюємо так, щоб 0° було вгору і зростало за годинниковою
+                angleDeg = (angleDeg + 450) % 360;
+
+                newRotation(parseFloat(angleDeg.toFixed(2)));
+            });
+        });
+    </script>
+
+</body>
+
+</html>

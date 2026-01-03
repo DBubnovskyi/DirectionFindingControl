@@ -1,0 +1,21 @@
+.serial-control {
+  width: 100%;
+}
+
+.compass_container {
+  position: relative;
+  aspect-ratio: 1/1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.compass_container img,
+.compass_container object {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  pointer-events: all;
+}
