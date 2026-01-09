@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SerialMonitor", "SerialMoni
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApp", "TestApp\TestApp.csproj", "{DE65B1A1-DC5B-4E78-97AA-81E8E54986EF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WPF App", "WPF App\WPF App.csproj", "{E8DE7BBB-E2DD-415A-B62E-A3AFF99C84D3}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,10 +27,6 @@ Global
 		{DE65B1A1-DC5B-4E78-97AA-81E8E54986EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE65B1A1-DC5B-4E78-97AA-81E8E54986EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE65B1A1-DC5B-4E78-97AA-81E8E54986EF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E8DE7BBB-E2DD-415A-B62E-A3AFF99C84D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E8DE7BBB-E2DD-415A-B62E-A3AFF99C84D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E8DE7BBB-E2DD-415A-B62E-A3AFF99C84D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E8DE7BBB-E2DD-415A-B62E-A3AFF99C84D3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

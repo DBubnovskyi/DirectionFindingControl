@@ -19,7 +19,7 @@ export default function LeftPanel() {
           Керування поворотним механізмом
         </Title>
 
-        <Accordion variant="separated" multiple defaultValue={['reset-password', 'another-account']} size="sm">
+        <Accordion variant="separated" multiple defaultValue={['reset-password', 'newsletter']} size="xs">
           <Accordion.Item value="reset-password">
             <Accordion.Control icon={<IconPlugConnected size={20} />}>Підключення</Accordion.Control>
             <Accordion.Panel>
