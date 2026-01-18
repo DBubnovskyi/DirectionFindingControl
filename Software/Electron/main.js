@@ -12,20 +12,6 @@ try {
   // electron-reload не доступній в production білді
 }
 
-// IPC handlers для серійних портів
-ipcMain.handle('serial:list-ports', async () => {
-  try {
-    const ports = await SerialPort.list();
-    return ports.map(port => ({
-      value: port.path,
-      label: `${port.path}${port.friendlyName ? ` - ${port.friendlyName}` : ''}`
-    }));
-  } catch (error) {
-    console.error('Error listing serial ports:', error);
-    return [];
-  }
-});
-
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1200,
@@ -41,10 +27,30 @@ function createWindow() {
   mainWindow.loadFile('dist/index.html');
 
   // Open DevTools in development
-  // mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
+  
+  // Enable remote debugging
+  mainWindow.webContents.debugger.attach('1.1');
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.debugger.detach();
+  });
 }
 
 app.whenReady().then(() => {
+  // IPC handlers для серійних портів
+  ipcMain.handle('serial:list-ports', async () => {
+    try {
+      const ports = await SerialPort.list();
+      return ports.map(port => ({
+        value: port.path,
+        label: `${port.path}${port.friendlyName ? ` - ${port.friendlyName}` : ''}`
+      }));
+    } catch (error) {
+      console.error('Error listing serial ports:', error);
+      return [];
+    }
+  });
+
   createWindow();
 
   app.on('activate', () => {

@@ -65,6 +65,7 @@
     "@tabler/icons-react": "^3.36.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "react-grid-layout": "^2.2.2",
     "serialport": "^13.0.0"
   }
 }
