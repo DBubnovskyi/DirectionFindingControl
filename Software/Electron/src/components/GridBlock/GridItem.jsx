@@ -5,6 +5,11 @@ import './GridBlock.css';
 
 export default function GridItem({ blockId, title, icon: Icon, children, layout, onLayoutChange, onDragPreview, onDragEnd, onHide }) {
 
+    // Захист від undefined layout
+    if (!layout) {
+        return null;
+    }
+
     const resizingRef = useRef(false);
     const draggingRef = useRef(false);
     const startPosRef = useRef({ x: 0, y: 0 });
@@ -32,15 +37,14 @@ export default function GridItem({ blockId, title, icon: Icon, children, layout,
         const deltaX = e.clientX - startPosRef.current.x;
         const deltaY = e.clientY - startPosRef.current.y;
 
-        const appElement = document.querySelector('.App');
-        const gridGap = 10;
-        const colWidth = (appElement.clientWidth - (gridGap * 23)) / 24;
+        const gridGap = 5;
+        const colWidth = 16;
         const rowHeight = 16 + gridGap;
 
         const deltaCols = Math.round(deltaX / colWidth);
         const deltaRows = Math.round(deltaY / rowHeight);
 
-        const newCols = Math.max(1, Math.min(24, startSizeRef.current.cols + deltaCols));
+        const newCols = Math.max(1, Math.min(96, startSizeRef.current.cols + deltaCols));
         const newRows = Math.max(1, startSizeRef.current.rows + deltaRows);
 
         currentSizeRef.current = { cols: newCols, rows: newRows };
@@ -83,15 +87,14 @@ export default function GridItem({ blockId, title, icon: Icon, children, layout,
         const deltaX = e.clientX - startPosRef.current.x;
         const deltaY = e.clientY - startPosRef.current.y;
 
-        const appElement = document.querySelector('.App');
         const gridGap = 10;
-        const colWidth = (appElement.clientWidth - (gridGap * 23)) / 24;
+        const colWidth = 16;
         const rowHeight = 16 + gridGap;
 
         const deltaCols = Math.round(deltaX / colWidth);
         const deltaRows = Math.round(deltaY / rowHeight);
 
-        const newCol = Math.max(1, Math.min(25 - layout.cols, startGridPosRef.current.col + deltaCols));
+        const newCol = Math.max(1, Math.min(97 - layout.cols, startGridPosRef.current.col + deltaCols));
         const newRow = Math.max(1, startGridPosRef.current.row + deltaRows);
 
         currentPosRef.current = { col: newCol, row: newRow };

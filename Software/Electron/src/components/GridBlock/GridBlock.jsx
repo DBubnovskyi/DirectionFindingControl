@@ -1,66 +1,74 @@
-import React, { useState, useEffect, Children, cloneElement } from 'react';
+import React, { useState, useEffect, Children } from 'react';
 import GridItem from './GridItem';
 import './GridBlock.css';
-
-const INITIAL_LAYOUTS = {
-    0: { col: 1, row: 1, cols: 6, rows: 12 },
-    1: { col: 7, row: 1, cols: 6, rows: 12 },
-    2: { col: 13, row: 1, cols: 12, rows: 30 }
-};
+import { useApp } from '../../contexts/AppContext';
 
 const STORAGE_KEY = 'gridBlockLayout';
 
-export default function GridBlock({ children, onHideBlock, onLayoutChange, layoutToLoad, onLayoutLoaded }) {
+export default function GridBlock({ children }) {
+    const { blocks, visibleBlocks, layoutToLoad, setCurrentLayout, hideBlock } = useApp();
     const childrenArray = Children.toArray(children);
+
+    // Функція для знаходження вільного місця для нового блоку
+    const findFreePosition = (existingLayout, cols = 6, rows = 12) => {
+        const occupied = [];
+
+        // Заповнити масив зайнятих клітинок
+        Object.values(existingLayout).forEach(block => {
+            for (let r = block.row; r < block.row + block.rows; r++) {
+                for (let c = block.col; c < block.col + block.cols; c++) {
+                    occupied.push(`${r}-${c}`);
+                }
+            }
+        });
+
+        // Спробувати розмістити блок починаючи з позиції (1, 1)
+        for (let col = 1; col <= 97 - cols; col++) {
+            for (let row = 1; row <= 100; row++) {
+                let canPlace = true;
+
+                // Перевірити чи всі клітинки вільні
+                for (let checkRow = row; checkRow < row + rows; checkRow++) {
+                    for (let checkCol = col; checkCol < col + cols; checkCol++) {
+                        const key = `${checkRow}-${checkCol}`;
+                        if (occupied.includes(key)) {
+                            canPlace = false;
+                            break;
+                        }
+                    }
+                    if (!canPlace) break;
+                }
+
+                if (canPlace) {
+                    return { col, row, cols, rows };
+                }
+            }
+        }
+
+        // Якщо не знайшли вільного місця - повернути дефолтну позицію внизу
+        const maxRow = Math.max(...Object.values(existingLayout).map(b => b.row + b.rows - 1), 0);
+        return { col: 1, row: maxRow + 1, cols, rows };
+    };
 
     const [layout, setLayout] = useState(() => {
         // Спробувати завантажити з localStorage
         try {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) {
-                const parsedLayout = JSON.parse(saved);
-                // Перевірити що всі блоки є в збереженому layout
-                const hasAllBlocks = childrenArray.every((_, index) => parsedLayout[index]);
-                if (hasAllBlocks) {
-                    return parsedLayout;
-                }
+                return JSON.parse(saved);
             }
         } catch (error) {
             console.error('Error loading layout from localStorage:', error);
         }
 
-        // Якщо не вдалось завантажити - використати дефолтний
+        // Якщо не вдалось завантажити - згенерувати початковий layout автоматично
         const initialLayout = {};
         childrenArray.forEach((child, index) => {
-            initialLayout[index] = INITIAL_LAYOUTS[index] || { col: 1, row: 1, cols: 6, rows: 12 };
+            const defaultSize = child.props.defaultSize || { cols: 6, rows: 12 };
+            initialLayout[index] = findFreePosition(initialLayout, defaultSize.cols, defaultSize.rows);
         });
         return initialLayout;
     });
-
-    // Зберігати layout в localStorage при кожній зміні
-    useEffect(() => {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
-        } catch (error) {
-            console.error('Error saving layout to localStorage:', error);
-        }
-        // Передати layout в App для збереження
-        if (onLayoutChange) {
-            onLayoutChange(layout);
-        }
-    }, [layout, onLayoutChange]);
-
-    // Завантажити layout з пропсів якщо передано
-    useEffect(() => {
-        if (layoutToLoad) {
-            setLayout(layoutToLoad);
-            if (onLayoutLoaded) {
-                onLayoutLoaded();
-            }
-        }
-    }, [layoutToLoad, onLayoutLoaded]);
-
-    const [dragPlaceholder, setDragPlaceholder] = useState(null);
 
     // Функція вертикального компактування
     const compactLayout = (newLayout) => {
@@ -111,6 +119,62 @@ export default function GridBlock({ children, onHideBlock, onLayoutChange, layou
         return compacted;
     };
 
+    // Оновлювати layout коли змінюються видимі блоки
+    useEffect(() => {
+        const layoutBlockIds = Object.keys(layout).map(Number);
+
+        // Знайти blockId які є в layout але не видимі (приховані блоки)
+        const hiddenBlockIds = layoutBlockIds.filter(id => !visibleBlocks.includes(id));
+
+        // Знайти blockId які видимі але яких немає в layout (ново додані блоки)
+        const newBlockIds = visibleBlocks.filter(id => !layoutBlockIds.includes(id));
+
+        if (hiddenBlockIds.length > 0 || newBlockIds.length > 0) {
+            setLayout(prevLayout => {
+                let newLayout = { ...prevLayout };
+
+                // Видалити з layout приховані блоки
+                hiddenBlockIds.forEach(id => {
+                    console.log('Removing block', id, 'from layout');
+                    delete newLayout[id];
+                });
+
+                // Якщо були видалені блоки - виконати компактування
+                if (hiddenBlockIds.length > 0) {
+                    newLayout = compactLayout(newLayout);
+                }
+
+                // Додати в layout нові блоки з defaultSize
+                newBlockIds.forEach(id => {
+                    const defaultSize = blocks[id]?.defaultSize || { cols: 6, rows: 12 };
+                    console.log('Adding block', id, 'with defaultSize:', defaultSize, 'from blocks:', blocks[id]);
+                    newLayout[id] = findFreePosition(newLayout, defaultSize.cols, defaultSize.rows);
+                });
+
+                return newLayout;
+            });
+        }
+    }, [visibleBlocks, blocks]);
+
+    // Зберігати layout в localStorage при кожній зміні
+    useEffect(() => {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
+        } catch (error) {
+            console.error('Error saving layout to localStorage:', error);
+        }
+        setCurrentLayout(layout);
+    }, [layout, setCurrentLayout]);
+
+    // Завантажити layout з пропсів якщо передано
+    useEffect(() => {
+        if (layoutToLoad) {
+            setLayout(layoutToLoad);
+        }
+    }, [layoutToLoad]);
+
+    const [dragPlaceholder, setDragPlaceholder] = useState(null);
+
     const updateBlockLayout = (blockId, updates) => {
         const newLayout = {
             ...layout,
@@ -145,18 +209,21 @@ export default function GridBlock({ children, onHideBlock, onLayoutChange, layou
                 />
             )}
             {childrenArray.map((child, index) => {
-                const blockId = child.props.blockId !== undefined ? child.props.blockId : index;
+                const blockId = index;
+                if (!visibleBlocks.includes(blockId)) return null;
+                const title = child.props.title;
+                const icon = child.props.icon;
                 return (
                     <GridItem
-                        key={child.key || index}
+                        key={blockId}
                         blockId={blockId}
-                        title={child.props.title}
-                        icon={child.props.icon}
-                        layout={layout[index]}
-                        onLayoutChange={(updates) => updateBlockLayout(index, updates)}
-                        onDragPreview={(updates) => previewBlockPosition(index, updates)}
+                        title={title}
+                        icon={icon}
+                        layout={layout[blockId]}
+                        onLayoutChange={(updates) => updateBlockLayout(blockId, updates)}
+                        onDragPreview={(updates) => previewBlockPosition(blockId, updates)}
                         onDragEnd={clearPlaceholder}
-                        onHide={onHideBlock}
+                        onHide={hideBlock}
                     >
                         {child}
                     </GridItem>

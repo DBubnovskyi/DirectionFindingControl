@@ -2,23 +2,25 @@ import React, { useState } from 'react';
 import { Group, Title, Text, Menu, Button, Modal, TextInput, Stack } from '@mantine/core';
 import { IconRadar, IconLayoutGridAdd, IconDeviceFloppy, IconTrash } from '@tabler/icons-react';
 import './Header.css';
+import { useApp } from '../../contexts/AppContext';
 
-export default function Header({
-    hiddenBlocks = [],
-    onShowBlock,
-    savedLayouts = [],
-    onSaveLayout,
-    onLoadLayout,
-    onDeleteLayout,
-    currentLayout,
-    activeLayoutId
-}) {
+export default function Header() {
+    const {
+        hiddenBlocks,
+        showBlock,
+        savedLayouts,
+        saveLayout,
+        loadLayout,
+        deleteLayout,
+        currentLayout,
+        activeLayoutId
+    } = useApp();
     const [saveModalOpened, setSaveModalOpened] = useState(false);
     const [layoutName, setLayoutName] = useState('');
 
     const handleSaveLayout = () => {
         if (layoutName.trim() && currentLayout) {
-            onSaveLayout(layoutName.trim());
+            saveLayout(layoutName.trim());
             setLayoutName('');
             setSaveModalOpened(false);
         }
@@ -58,7 +60,7 @@ export default function Header({
                                         <Menu.Item
                                             key={block.id}
                                             leftSection={<block.icon size={16} />}
-                                            onClick={() => onShowBlock(block.id)}
+                                            onClick={() => showBlock(block.id)}
                                         >
                                             {block.title}
                                         </Menu.Item>
@@ -93,7 +95,7 @@ export default function Header({
                                         {savedLayouts.map(layout => (
                                             <Menu.Item
                                                 key={layout.id}
-                                                onClick={() => onLoadLayout(layout.id)}
+                                                onClick={() => loadLayout(layout.id)}
                                                 color={layout.id === activeLayoutId ? 'blue' : 'white'}
                                                 bg={layout.id === activeLayoutId ? '#444' : 'transparent'}
                                                 style={{
@@ -104,7 +106,7 @@ export default function Header({
                                                         size={14}
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            onDeleteLayout(layout.id);
+                                                            deleteLayout(layout.id);
                                                         }}
                                                         style={{ cursor: 'pointer', color: 'var(--mantine-color-red-6)' }}
                                                     />

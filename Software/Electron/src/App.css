@@ -2,7 +2,7 @@
   min-height: calc(100vh - 60px);
   background: var(--backgraund);
   display: grid;
-  grid-template-columns: repeat(24, 1fr);
+  grid-template-columns: repeat(96, 16px);
   grid-auto-rows: 16px;
   gap: 10px;
   padding: 10px;
