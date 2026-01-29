@@ -3,8 +3,7 @@
     flex-direction: column;
     overflow: auto;
     position: relative;
-    /* border-radius: 0px !important; */
-    background: var(--background-light);
+    background: #121212bd !important;
 }
 
 .grid-block-title {
@@ -18,6 +17,8 @@
     flex: 1;
     overflow: auto;
     padding: 10px;
+    position: relative;
+    height: calc(100% - 40px);
 }
 
 .resize-handle {

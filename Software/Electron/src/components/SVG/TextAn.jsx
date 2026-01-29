@@ -1,5 +1,9 @@
 import React from 'react';
 
+const style1 = { pointerEvents: 'none', position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' };
+const style2 = { fill: '#333', strokeWidth: 1 };
+const style3 = { fontFamily: 'monospace', fontSize: '12px', fill: '#ccc', textAnchor: 'middle', dominantBaseline: 'middle' };
+
 export default function TextAn({ text = 'кут' }) {
     return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500"
@@ -11,7 +15,3 @@ export default function TextAn({ text = 'кут' }) {
         </svg>
     )
 }
-
-const style1 = { pointerEvents: 'none', position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' };
-const style2 = { fill: '#333', strokeWidth: 1 };
-const style3 = { fontFamily: 'monospace', fontSize: '12px', fill: '#ccc', textAnchor: 'middle', dominantBaseline: 'middle' };

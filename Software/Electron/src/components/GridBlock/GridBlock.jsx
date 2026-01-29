@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Children } from 'react';
+import React, { useState, useEffect, Children, useMemo } from 'react';
 import GridItem from './GridItem';
 import './GridBlock.css';
 import { useApp } from '../../contexts/AppContext';
@@ -6,8 +6,19 @@ import { useApp } from '../../contexts/AppContext';
 const STORAGE_KEY = 'gridBlockLayout';
 
 export default function GridBlock({ children }) {
-    const { blocks, visibleBlocks, layoutToLoad, setCurrentLayout, hideBlock } = useApp();
-    const childrenArray = Children.toArray(children);
+    const { blocks, visibleBlocks, layoutToLoad, setCurrentLayout, hideBlock, registerBlocks } = useApp();
+    const childrenArray = useMemo(() => Children.toArray(children), [children]);
+
+    // Реєструємо блоки в контексті при монтуванні
+    useEffect(() => {
+        const blocksData = childrenArray.map((child, index) => ({
+            id: index,
+            title: child.props.title,
+            icon: child.props.icon,
+            defaultSize: child.props.defaultSize
+        }));
+        registerBlocks(blocksData);
+    }, [childrenArray.length, registerBlocks]);
 
     // Функція для знаходження вільного місця для нового блоку
     const findFreePosition = (existingLayout, cols = 6, rows = 12) => {
@@ -210,9 +221,14 @@ export default function GridBlock({ children }) {
             )}
             {childrenArray.map((child, index) => {
                 const blockId = index;
-                if (!visibleBlocks.includes(blockId)) return null;
+                const isVisible = visibleBlocks.includes(blockId);
                 const title = child.props.title;
                 const icon = child.props.icon;
+                const headerActions = child.type?.headerActions;
+
+                // Клонуємо child щоб зберегти той самий екземпляр React елемента
+                const clonedChild = React.cloneElement(child, { key: `child-${blockId}` });
+
                 return (
                     <GridItem
                         key={blockId}
@@ -224,8 +240,10 @@ export default function GridBlock({ children }) {
                         onDragPreview={(updates) => previewBlockPosition(blockId, updates)}
                         onDragEnd={clearPlaceholder}
                         onHide={hideBlock}
+                        isVisible={isVisible}
+                        headerActions={headerActions}
                     >
-                        {child}
+                        {clonedChild}
                     </GridItem>
                 );
             })}

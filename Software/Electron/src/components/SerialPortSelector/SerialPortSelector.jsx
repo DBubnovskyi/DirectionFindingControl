@@ -66,6 +66,12 @@ export default function SerialPortSelector() {
                 />
             </Group>
 
+            <Text size="sm" c="dimmed">
+                {isConnected && selectedPort
+                    ? `Підключено до ${selectedPort} зі швидкістю ${baudRate} baud`
+                    : 'Підключення не встановлено'}
+            </Text>
+
             <Group justify="space-between" align="center">
                 <Badge
                     color={isConnected ? 'green' : 'gray'}
@@ -87,12 +93,6 @@ export default function SerialPortSelector() {
                     {isConnected ? 'Відключитись' : 'Підключитись'}
                 </Button>
             </Group>
-
-            {isConnected && selectedPort && (
-                <Text size="sm" c="dimmed">
-                    Підключено до {selectedPort} зі швидкістю {baudRate} baud
-                </Text>
-            )}
         </Stack>
     );
 }

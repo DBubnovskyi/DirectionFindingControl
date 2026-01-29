@@ -1,25 +1,41 @@
 import React, { useRef } from 'react';
 import { Paper, Title, ActionIcon } from '@mantine/core';
-import { IconX } from '@tabler/icons-react';
+import { IconX, IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import './GridBlock.css';
+import { useApp } from '../../contexts/AppContext';
 
-export default function GridItem({ blockId, title, icon: Icon, children, layout, onLayoutChange, onDragPreview, onDragEnd, onHide }) {
-
-    // Захист від undefined layout
-    if (!layout) {
-        return null;
-    }
+export default function GridItem({ blockId, title, icon: Icon, children, layout, onLayoutChange, onDragPreview, onDragEnd, onHide, isVisible = true, headerActions }) {
+    const { collapsedBlocks, toggleCollapse, isEditMode } = useApp();
+    const isCollapsed = collapsedBlocks.includes(blockId);
 
     const resizingRef = useRef(false);
     const draggingRef = useRef(false);
     const startPosRef = useRef({ x: 0, y: 0 });
     const startSizeRef = useRef({ cols: 0, rows: 0 });
     const startGridPosRef = useRef({ col: 0, row: 0 });
-    const currentSizeRef = useRef({ cols: layout.cols, rows: layout.rows });
-    const currentPosRef = useRef({ col: layout.col, row: layout.row });
+    const currentSizeRef = useRef({ cols: layout?.cols || 0, rows: layout?.rows || 0 });
+    const currentPosRef = useRef({ col: layout?.col || 0, row: layout?.row || 0 });
+    const originalRowsRef = useRef(layout?.rows || 0);
     const blockRef = useRef(null);
 
+    // Оновлюємо refs при зміні layout
+    React.useEffect(() => {
+        if (!layout) return;
+        currentSizeRef.current = { cols: layout.cols, rows: layout.rows };
+        currentPosRef.current = { col: layout.col, row: layout.row };
+        // Зберігаємо оригінальну висоту тільки якщо блок не згорнутий
+        if (!isCollapsed && layout.rows > 2) {
+            originalRowsRef.current = layout.rows;
+        }
+    }, [layout, isCollapsed]);
+
+    // Захист від undefined layout
+    if (!layout) {
+        return null;
+    }
+
     const handleResizeStart = (e) => {
+        if (!isEditMode) return; // Блокуємо resize якщо не в режимі редагування
         e.preventDefault();
         e.stopPropagation();
         resizingRef.current = true;
@@ -38,11 +54,12 @@ export default function GridItem({ blockId, title, icon: Icon, children, layout,
         const deltaY = e.clientY - startPosRef.current.y;
 
         const gridGap = 5;
-        const colWidth = 16;
-        const rowHeight = 16 + gridGap;
+        const colWidth = 19;
+        const rowHeight = 19;
 
-        const deltaCols = Math.round(deltaX / colWidth);
-        const deltaRows = Math.round(deltaY / rowHeight);
+        // Враховуємо gap між клітинками
+        const deltaCols = Math.round(deltaX / (colWidth + gridGap));
+        const deltaRows = Math.round(deltaY / (rowHeight + gridGap));
 
         const newCols = Math.max(1, Math.min(96, startSizeRef.current.cols + deltaCols));
         const newRows = Math.max(1, startSizeRef.current.rows + deltaRows);
@@ -64,6 +81,7 @@ export default function GridItem({ blockId, title, icon: Icon, children, layout,
     };
 
     const handleDragStart = (e) => {
+        if (!isEditMode) return; // Блокуємо drag якщо не в режимі редагування
         if (e.target.closest('.resize-handle')) return;
 
         e.preventDefault();
@@ -87,23 +105,23 @@ export default function GridItem({ blockId, title, icon: Icon, children, layout,
         const deltaX = e.clientX - startPosRef.current.x;
         const deltaY = e.clientY - startPosRef.current.y;
 
-        const gridGap = 10;
-        const colWidth = 16;
-        const rowHeight = 16 + gridGap;
+        const gridGap = 5;
+        const colWidth = 19;
+        const rowHeight = 19;
 
-        const deltaCols = Math.round(deltaX / colWidth);
-        const deltaRows = Math.round(deltaY / rowHeight);
+        // Плавне переміщення через transform
+        if (blockRef.current) {
+            blockRef.current.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+        }
+
+        // Враховуємо gap між клітинками для preview
+        const deltaCols = Math.round(deltaX / (colWidth + gridGap));
+        const deltaRows = Math.round(deltaY / (rowHeight + gridGap));
 
         const newCol = Math.max(1, Math.min(97 - layout.cols, startGridPosRef.current.col + deltaCols));
         const newRow = Math.max(1, startGridPosRef.current.row + deltaRows);
 
         currentPosRef.current = { col: newCol, row: newRow };
-
-        if (blockRef.current) {
-            // blockRef.current.style.gridColumn = `${newCol} / span ${layout.cols}`;
-            // blockRef.current.style.gridRow = `${newRow} / span ${layout.rows}`;
-            onLayoutChange({ col: newCol, row: newRow });
-        }
 
         // Показуємо placeholder де буде блок після компактування
         if (onDragPreview) {
@@ -116,7 +134,9 @@ export default function GridItem({ blockId, title, icon: Icon, children, layout,
         document.removeEventListener('mousemove', handleDragMove);
         document.removeEventListener('mouseup', handleDragEndHandler);
 
+        // Скидаємо transform
         if (blockRef.current) {
+            blockRef.current.style.transform = '';
             blockRef.current.style.opacity = '1';
             blockRef.current.style.zIndex = 'auto';
         }
@@ -125,12 +145,33 @@ export default function GridItem({ blockId, title, icon: Icon, children, layout,
             onDragEnd();
         }
 
+        // Оновлюємо grid position тільки в кінці drag
         onLayoutChange({ col: currentPosRef.current.col, row: currentPosRef.current.row });
+    };
+
+    const handleToggleCollapse = (e) => {
+        e.stopPropagation();
+
+        // isCollapsed - це поточний стан, після toggleCollapse він зміниться на протилежний
+        const willBeCollapsed = !isCollapsed;
+        toggleCollapse(blockId);
+
+        // Оновлюємо висоту в layout
+        if (willBeCollapsed) {
+            // Згортаємо - встановлюємо 2 рядки
+            onLayoutChange({ rows: 2 });
+        } else {
+            // Розгортаємо - повертаємо збережену висоту
+            onLayoutChange({ rows: originalRowsRef.current });
+        }
     };
 
     const gridStyle = {
         gridColumn: `${layout.col} / span ${layout.cols}`,
-        gridRow: `${layout.row} / span ${layout.rows}`
+        gridRow: `${layout.row} / span ${layout.rows}`,
+        visibility: isVisible ? 'visible' : 'hidden',
+        position: isVisible ? 'relative' : 'absolute',
+        pointerEvents: isVisible ? 'auto' : 'none'
     };
 
     return (
@@ -147,34 +188,57 @@ export default function GridItem({ blockId, title, icon: Icon, children, layout,
                 mb="md"
                 className="grid-block-title"
                 onMouseDown={handleDragStart}
-                style={{ cursor: 'move', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                style={{ cursor: isEditMode ? 'move' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
             >
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                     <Icon size={20} style={{ verticalAlign: 'middle', marginRight: 8 }} />
                     {title}
                 </div>
-                {onHide && (
+                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                    {headerActions && <div style={{ display: 'flex', gap: '4px', marginRight: '4px' }}>{headerActions}</div>}
                     <ActionIcon
                         size="sm"
                         variant="subtle"
                         color="gray"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onHide(blockId);
-                        }}
+                        onClick={handleToggleCollapse}
                         style={{ cursor: 'pointer' }}
+                        title={isCollapsed ? "Розгорнути" : "Згорнути"}
                     >
-                        <IconX size={16} />
+                        {isCollapsed ? <IconChevronDown size={16} /> : <IconChevronUp size={16} />}
                     </ActionIcon>
-                )}
+                    {isEditMode && onHide && (
+                        <ActionIcon
+                            size="sm"
+                            variant="subtle"
+                            color="gray"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onHide(blockId);
+                            }}
+                            style={{ cursor: 'pointer' }}
+                            title="Видалити"
+                        >
+                            <IconX size={16} />
+                        </ActionIcon>
+                    )}
+                </div>
             </Title>
-            <div className="grid-block-content">
+            <div
+                className="grid-block-content"
+                style={{
+                    display: isCollapsed ? 'none' : 'flex',
+                    flexDirection: 'column',
+                    flex: 1
+                }}
+            >
                 {children}
             </div>
-            <div
-                className="resize-handle"
-                onMouseDown={handleResizeStart}
-            />
+            {!isCollapsed && isEditMode && (
+                <div
+                    className="resize-handle"
+                    onMouseDown={handleResizeStart}
+                />
+            )}
         </Paper>
     );
 }

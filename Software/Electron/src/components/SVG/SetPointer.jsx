@@ -1,5 +1,8 @@
 import React from 'react';
 
+const style1 = { pointerEvents: 'none', position: 'absolute', width: '92%', height: '92%' };
+const style2 = { fill: '#e0dd46', stroke: '#868532', strokeWidth: 2 };
+
 export default function SetPointer({ angle = 0 }) {
     const style0 = { ...style1, transform: `rotate(${angle}deg)` };
     return (
@@ -8,16 +11,3 @@ export default function SetPointer({ angle = 0 }) {
         </svg>
     )
 }
-
-const style1 = {
-    pointerEvents: 'none',
-    position: 'absolute',
-    width: '92%',
-    height: '92%'
-};
-
-const style2 = {
-    fill: '#e0dd46',
-    stroke: '#868532',
-    strokeWidth: 2
-};

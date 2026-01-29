@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Group, Title, Text, Menu, Button, Modal, TextInput, Stack } from '@mantine/core';
-import { IconRadar, IconLayoutGridAdd, IconDeviceFloppy, IconTrash } from '@tabler/icons-react';
+import { IconRadar, IconLayoutGridAdd, IconDeviceFloppy, IconTrash, IconLockOpen2, IconLock } from '@tabler/icons-react';
 import './Header.css';
 import { useApp } from '../../contexts/AppContext';
 
@@ -13,7 +13,9 @@ export default function Header() {
         loadLayout,
         deleteLayout,
         currentLayout,
-        activeLayoutId
+        activeLayoutId,
+        isEditMode,
+        toggleEditMode
     } = useApp();
     const [saveModalOpened, setSaveModalOpened] = useState(false);
     const [layoutName, setLayoutName] = useState('');
@@ -43,7 +45,7 @@ export default function Header() {
                     </Group>
                     <Group gap="md">
                         {/* Приховані блоки */}
-                        {hiddenBlocks.length > 0 && (
+                        {isEditMode && hiddenBlocks.length > 0 && (
                             <Menu shadow="md" width={200}>
                                 <Menu.Target>
                                     <Button
@@ -119,6 +121,16 @@ export default function Header() {
                                 )}
                             </Menu.Dropdown>
                         </Menu>
+                        {/* Режим редагування */}
+                        <Button
+                            variant={isEditMode ? "filled" : "light"}
+                            size="sm"
+                            color={isEditMode ? "blue" : "gray"}
+                            leftSection={isEditMode ? <IconLockOpen2 size={16} /> : <IconLock size={16} />}
+                            onClick={toggleEditMode}
+                        >
+                            редагування
+                        </Button>
                         <Text size="sm" c="dimmed">
                             v1.0.0
                         </Text>
