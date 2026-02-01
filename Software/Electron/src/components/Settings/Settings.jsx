@@ -1,14 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { TextInput, Stack, RangeSlider, Text } from '@mantine/core';
+import { useRotator } from '../../contexts/RotatorContext';
 import SettingsHeaderActions from './SettingsHeaderActions';
 import './Settings.css';
 
 function Settings() {
+    const { settings: rotatorSettings, sendGetCommand, sendSetCommand } = useRotator();
+
     const [settings, setSettings] = useState({
         error: '',
         speedRange: [0, 100],
         brakeAngle: ''
     });
+
+    // Синхронізуємо з RotatorContext
+    useEffect(() => {
+        setSettings(prev => ({
+            ...prev,
+            error: rotatorSettings.tolerance?.toString() || '',
+            speedRange: [rotatorSettings.minSpeed || 0, rotatorSettings.maxSpeed || 100],
+            brakeAngle: rotatorSettings.brake?.toString() || ''
+        }));
+    }, [rotatorSettings]);
 
     useEffect(() => {
         loadSettings();
@@ -34,21 +47,31 @@ function Settings() {
     const handleChange = (field, value) => {
         const newSettings = { ...settings, [field]: value };
         setSettings(newSettings);
+        // Зберігаємо одразу в localStorage для синхронізації з headerActions
+        localStorage.setItem('rotator-settings', JSON.stringify(newSettings));
     };
 
     const handleSpeedRangeChange = (value) => {
         const newSettings = { ...settings, speedRange: value };
         setSettings(newSettings);
+        // Зберігаємо одразу в localStorage для синхронізації з headerActions
+        localStorage.setItem('rotator-settings', JSON.stringify(newSettings));
     };
 
     const handleSave = () => {
-        localStorage.setItem('rotator-settings', JSON.stringify(settings));
-        // TODO: Відправити налаштування на пристрій
-    };
+        console.log('💾 Settings.handleSave - Current settings:', settings);
 
-    const handleLoad = () => {
-        // TODO: Зчитати налаштування з пристрою
-        loadSettings();
+        // Відправляємо налаштування на пристрій
+        sendSetCommand({
+            tolerance: parseFloat(settings.error) || rotatorSettings.tolerance,
+            minSpeed: settings.speedRange[0],
+            maxSpeed: settings.speedRange[1],
+            brake: parseFloat(settings.brakeAngle) || rotatorSettings.brake
+        });
+
+        // Зберігаємо в localStorage
+        localStorage.setItem('rotator-settings', JSON.stringify(settings));
+        console.log('💾 Settings saved to localStorage and device');
     };
 
     return (
@@ -90,23 +113,8 @@ function Settings() {
     );
 }
 
-// Статична властивість компонента - headerActions
-// GridBlock прочитає її через child.type.headerActions
-Settings.headerActions = (() => {
-    const handleSave = () => {
-        const settings = JSON.parse(localStorage.getItem('rotator-settings') || '{}');
-        localStorage.setItem('rotator-settings', JSON.stringify(settings));
-        // TODO: Відправити налаштування на пристрій
-        console.log('Settings saved:', settings);
-    };
-
-    const handleLoad = () => {
-        // TODO: Зчитати налаштування з пристрою
-        const settings = JSON.parse(localStorage.getItem('rotator-settings') || '{}');
-        console.log('Settings loaded:', settings);
-    };
-
-    return <SettingsHeaderActions onLoad={handleLoad} onSave={handleSave} />;
-})();
+// Статична властивість для headerActions, яка буде використана GridBlock
+Settings.headerActions = <SettingsHeaderActions />;
 
 export default Settings;
+

@@ -2,6 +2,9 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { SerialPort } = require('serialport');
 
+let mainWindow = null;
+let serialPort = null;
+
 // Live reload в режимі розробки
 try {
   require('electron-reload')(__dirname, {
@@ -13,7 +16,7 @@ try {
 }
 
 function createWindow() {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     autoHideMenuBar: true,
@@ -25,15 +28,6 @@ function createWindow() {
   });
 
   mainWindow.loadFile('dist/index.html');
-
-  // Open DevTools in development
-  mainWindow.webContents.openDevTools();
-  
-  // Enable remote debugging
-  mainWindow.webContents.debugger.attach('1.1');
-  mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow.webContents.debugger.detach();
-  });
 }
 
 app.whenReady().then(() => {
@@ -48,6 +42,70 @@ app.whenReady().then(() => {
     } catch (error) {
       console.error('Error listing serial ports:', error);
       return [];
+    }
+  });
+
+  // Відкриття серійного порту
+  ipcMain.handle('serial:open', async (event, portPath, baudRate) => {
+    try {
+      if (serialPort && serialPort.isOpen) {
+        await new Promise((resolve) => serialPort.close(resolve));
+      }
+
+      serialPort = new SerialPort({
+        path: portPath,
+        baudRate: parseInt(baudRate)
+      });
+
+      serialPort.on('data', (data) => {
+        if (mainWindow) {
+          mainWindow.webContents.send('serial:data', data.toString());
+        }
+      });
+
+      serialPort.on('error', (err) => {
+        console.error('Serial port error:', err);
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error opening serial port:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Закриття серійного порту
+  ipcMain.handle('serial:close', async () => {
+    try {
+      if (serialPort && serialPort.isOpen) {
+        await new Promise((resolve) => serialPort.close(resolve));
+        serialPort = null;
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Error closing serial port:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Запис в серійний порт
+  ipcMain.handle('serial:write', async (event, data) => {
+    try {
+      if (!serialPort || !serialPort.isOpen) {
+        return { success: false, error: 'Serial port is not open' };
+      }
+
+      await new Promise((resolve, reject) => {
+        serialPort.write(data, (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error writing to serial port:', error);
+      return { success: false, error: error.message };
     }
   });
 

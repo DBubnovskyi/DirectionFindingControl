@@ -1,5 +1,4 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { rotatorState } from '../types/rotatorState';
 
 const AppContext = createContext();
 
@@ -10,7 +9,6 @@ const COLLAPSED_KEY = 'gridBlockCollapsed';
 const EDIT_MODE_KEY = 'gridBlockEditMode';
 
 export function AppProvider({ children }) {
-    const [angles, setAngles] = useState(rotatorState);
     const [blocks, setBlocks] = useState([]);
     const [visibleBlocks, setVisibleBlocks] = useState(() => {
         try {
@@ -164,8 +162,6 @@ export function AppProvider({ children }) {
         saveLayout,
         loadLayout,
         deleteLayout,
-        angles,
-        setAngles,
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

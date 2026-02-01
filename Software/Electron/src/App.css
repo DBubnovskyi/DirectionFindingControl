@@ -1,6 +1,4 @@
 .App {
-  min-height: calc(100vh - 60px);
-  background: var(--backgraund);
   display: grid;
   grid-template-columns: repeat(96, 19px);
   grid-auto-rows: 19px;
@@ -22,7 +20,6 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-  background: #1a1a1a;
 }
 
 body * {

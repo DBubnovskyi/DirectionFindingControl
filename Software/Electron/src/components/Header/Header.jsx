@@ -78,11 +78,11 @@ export default function Header() {
                                     size="sm"
                                     leftSection={<IconDeviceFloppy size={16} />}
                                 >
-                                    Лейаути ({savedLayouts.length})
+                                    Компонування ({savedLayouts.length})
                                 </Button>
                             </Menu.Target>
                             <Menu.Dropdown>
-                                <Menu.Label>Управління лейаутами</Menu.Label>
+                                <Menu.Label>Управління компонуванням</Menu.Label>
                                 <Menu.Item
                                     leftSection={<IconDeviceFloppy size={16} />}
                                     onClick={() => setSaveModalOpened(true)}

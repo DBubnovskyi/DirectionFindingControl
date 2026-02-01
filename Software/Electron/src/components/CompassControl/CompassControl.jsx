@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { rotatorState } from '../../types/rotatorState';
-import './SerialControl.css';
+import './CompassControl.css';
 import ScaleAz from '../SVG/ScaleAz';
 import ScaleAn from '../SVG/ScaleAn';
 import DataCircle from '../SVG/DataCircle';
@@ -10,10 +10,10 @@ import TextAz from '../SVG/TextAz';
 import SetPointer from '../SVG/SetPointer';
 import RealPointer from '../SVG/RealPointer';
 
-export default function SerialControl() {
+export default function CompassControl() {
     const [angles, setAngles] = useState(rotatorState);
     return (
-        <div className="serial-control">
+        <div className="compass-control">
             <div className="compass_container">
                 <ScaleAz />
                 <ScaleAn />
