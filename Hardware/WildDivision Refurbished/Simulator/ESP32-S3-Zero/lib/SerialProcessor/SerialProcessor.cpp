@@ -67,16 +67,17 @@ void SerialProcessor::SendResponse(const String &response)
     {
         digitalWrite(_dePin, HIGH);
     }
-    
-    _serial.write(response.c_str());
-    
-    // Якщо використовуємо DE/RE, чекаємо завершення передачі
+
+    _serial.print(response);
+    // Для RS485 (коли _dePin >= 0) не робимо flush - він може блокувати
+    // Для USB Serial (_dePin < 0) також не робимо flush щоб не блокувати при відключенні
+    // print() сам додає дані до буфера і вони відправляться
+
+    // Вимкнення режиму передачі
     if (_dePin >= 0)
     {
-        _serial.flush(); // Чекаємо тільки якщо контролюємо DE/RE
         digitalWrite(_dePin, LOW);
     }
-    // Інакше UART відправить дані в фоні
 }
 
 void SerialProcessor::AddToResponseBuffer(const String &response)
@@ -189,8 +190,8 @@ void SerialProcessor::processCommand(const String &command)
             if (command.startsWith("$ER,"))
             {
                 String value = command.substring(4); // Отримуємо частину після "$ER,"
-                value.trim(); // Видаляємо пробіли
-                
+                value.trim();                        // Видаляємо пробіли
+
                 if (value == "L")
                 {
                     _controller.adjustSensorError('L');
@@ -288,13 +289,13 @@ void SerialProcessor::handleSerialCommands()
     static bool wasRotating = false;
     static unsigned long lastStatusTime = 0;
     static unsigned long lastCommandTime = 0;
-    
+
     bool isRotating = _controller.isRotating();
     unsigned long currentTime = millis();
 
     // Відправка статусу обертання (тільки якщо не було команд останні 500мс)
     bool canSendStatus = (currentTime - lastCommandTime) > 500;
-    
+
     if (isRotating && canSendStatus && (currentTime - lastStatusTime >= 200))
     {
         sendRotationStatus();
@@ -317,15 +318,15 @@ void SerialProcessor::handleSerialCommands()
 
     // Обробка вхідних команд (неблокуюче читання)
     _led.off();
-    
+
     int bytesProcessed = 0;
     bool commandReceived = false;
-    
+
     while (_serial.available() > 0 && bytesProcessed < 128)
     {
         char c = (char)_serial.read();
         bytesProcessed++;
-        
+
         // Ігнорувати непечатні символи (крім \n, \r, ;)
         if ((c >= 32 && c <= 126) || c == '\n' || c == '\r' || c == ';')
         {
@@ -341,7 +342,7 @@ void SerialProcessor::handleSerialCommands()
                     }
                     _inputBuffer = "";
                 }
-                
+
                 // Відправляємо всю накопичену відповідь
                 if (_responseBuffer.length() > 0)
                 {
@@ -350,7 +351,7 @@ void SerialProcessor::handleSerialCommands()
                     _responseBuffer = "";
                     _led.off();
                 }
-                
+
                 commandReceived = true;
             }
             // Роздільник команд
@@ -370,14 +371,14 @@ void SerialProcessor::handleSerialCommands()
                 _inputBuffer += c;
             }
         }
-        
+
         // Захист від переповнення буфера
         if (_inputBuffer.length() > 256)
         {
             _inputBuffer = "";
         }
     }
-    
+
     // Оновлюємо час останньої команди
     if (commandReceived)
     {
@@ -388,20 +389,22 @@ void SerialProcessor::handleSerialCommands()
 bool SerialProcessor::isValidCommand(const String &cmd)
 {
     // Перевірка що команда починається з # або $
-    if (cmd.length() < 2) return false;
-    if (cmd[0] != '#' && cmd[0] != '$') return false;
-    
+    if (cmd.length() < 2)
+        return false;
+    if (cmd[0] != '#' && cmd[0] != '$')
+        return false;
+
     // Перевірка що команда містить тільки допустимі символи
     for (unsigned int i = 0; i < cmd.length(); i++)
     {
         char c = cmd[i];
-        if (!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || 
+        if (!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
               c == '_' || c == ',' || c == '-' || c == '#' || c == '$' || c == '.'))
         {
             return false;
         }
     }
-    
+
     return true;
 }
 
@@ -411,7 +414,7 @@ void SerialProcessor::sendRotationStatus()
     float angle = _controller.getSensorAngle();
     float azimuth = _controller.angleToAzimuth(angle);
     int rotatingStatus = _controller.isRotating() ? 1 : 0;
-    
+
     String status = "SP," + String(speed) + ";AZ," + String(azimuth, 1) + ";AN," + String(angle, 1) + ";RT," + String(rotatingStatus) + ";\n";
     SendResponse(status);
 }

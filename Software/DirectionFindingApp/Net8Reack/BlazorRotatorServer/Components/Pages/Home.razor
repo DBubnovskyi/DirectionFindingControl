@@ -1,0 +1,86 @@
+﻿@page "/main"
+<PageTitle>Адміністрування</PageTitle>
+
+@using BlazorRotatorServer.Processors;
+@using BlazorRotatorServer.Models;
+@implements IDisposable
+
+<section class="hero is-small">
+    <div class="hero-body">
+        <p class="title is-size-6">Blazor Rotator Server</p>
+        <p class="subtitle is-size-6">
+            Сервер для керування поворотним механізмом і надання API для клієнтських застосунків.
+            Побудований на ASP.NET Core (.NET 8), використовує Blazor Server для веб-інтерфейсу,
+            REST API контролери для інтеграцій, маршрутизацію та вбудований пайплайн middleware.
+            Підтримує роботу через HTTP/HTTPS, профілі запуску для розробки та автооновлення через dotnet watch.
+        </p>
+    </div>
+</section>
+<section class="hero is-small">
+    <div class="hero-body">
+        <p class="title is-size-6">Rest API</p>
+        <p class="subtitle is-size-6">
+            <a href="/api/rotator" target="_blank">GET Rotator</a> - повертає об'єкт
+        </p>
+    </div>
+</section>
+
+@code {
+    private List<PortDetails> serial = Server.Serial.GetAvailablePorts().OrderBy(x => x.PortName).ToList();
+    private System.Threading.Timer? _timer;
+    private string? _selectedPortName;
+
+    protected override void OnInitialized()
+    {
+        _selectedPortName = serial.FirstOrDefault()?.PortName;
+
+        _timer = new System.Threading.Timer(_ =>
+        {
+            _ = InvokeAsync(() =>
+            {
+                serial = Server.Serial.GetAvailablePorts().OrderBy(x => x.PortName).ToList();
+
+                if (string.IsNullOrWhiteSpace(_selectedPortName) || !serial.Any(p => p.PortName == _selectedPortName))
+                {
+                    _selectedPortName = serial.FirstOrDefault()?.PortName;
+                }
+
+                StateHasChanged();
+            });
+        }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+
+    public void Connect()
+    {
+        if (_selectedPortName != null)
+            Server.Serial.Connect(_selectedPortName);
+    }
+}
+<section class="hero is-small">
+    <div class="hero-body">
+        <p class="title is-size-6">Підключення</p>
+        <div class="message-body">
+            <div class="field">
+                <p>вибір серійного порту - @_selectedPortName @Server.Serial.Connection.State</p>
+                <div class="control">
+                    <div class="select">
+                        <select @bind="_selectedPortName">
+                            @foreach (var port in serial)
+                            {
+                                <option value="@port.PortName">
+                                    @port.PortName - @port.FriendlyName, @port.Manufacturer, @port.Status
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <button @onclick="Connect" class="button">Підключити</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

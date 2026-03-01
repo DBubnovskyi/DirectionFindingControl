@@ -117,4 +117,7 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="label32.Text" xml:space="preserve">
+    <value>Задає мертву зону в яку антена не буде повертатись. Основне значення це кут, це кут відносно нульового положення антени. Кут 180 градусів має лежати в межах забороненої зони. Азимут перераховується в кут якщо значення залані так що умова з кутом 180 виконужться</value>
+  </data>
 </root>

@@ -10,11 +10,9 @@ namespace TestApp
 {
     public partial class Form1 : Form
     {
-        private Form2 _form2;
+        private Form2? _form2;
 
         private Serial _serial = null!;
-        private DeviceSimulator _simulator = null!;
-        private bool _useSimulator = false;
         private System.Windows.Forms.Timer _refreshTimer = null!;
         private System.Windows.Forms.Timer _dataRequestTimer = null!;
         private System.Windows.Forms.Timer _scanWaitTimer = null!;
@@ -47,7 +45,9 @@ namespace TestApp
         private int _currentSpeed = 0;
         private int _anAzValue = 0; // Азимут на якому знаходиться кут 180
         private const int DefaultRotationSpeed = 30; // deg/sec used for timeout when unknown
+#pragma warning disable CS0414 // Field is assigned but never used
         private bool _rotationTimedOut = false;
+#pragma warning restore CS0414
         private int _scanRetryIntervalMs = 300; // retry waiting for stop
 
         private float _lastKnownAzimuth = 0.0f;
@@ -56,14 +56,10 @@ namespace TestApp
         private GMapOverlay? _markersOverlay = null;
         private GMapMarker? _stationMarker = null;
         private GMapOverlay? _routesOverlay = null;
-        private GMapRoute? _azimuthLine = null;
-        private GMapPolygon? _azimuthPolygon = null;
-        private GMapPolygon? _forbiddenPolygon = null;
-        private GMapRoute? _mousePreviewLine = null;
         private ToolTip _mapToolTip = new ToolTip();
-        private readonly Pen _mousePreviewPen = new Pen(Color.Blue, 1) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash };
-        private List<GMapRoute> _savedBearingLines = new List<GMapRoute>();
-        private List<GMapPolygon> _savedBearingPolygons = new List<GMapPolygon>();
+        private MapPreviewRenderer? _mapPreviewRenderer = null;
+        private MapController? _mapController = null;
+        private bool _isUpdatingForbiddenZone = false;
 
         public Form1()
         {
@@ -84,11 +80,47 @@ namespace TestApp
             // Disable groupBox1 controls until connected
             groupBox1.Enabled = false;
 
+            // Disable main control panels until initialization complete (IN,4)
+            panel2.Enabled = false;
+            groupBox4.Enabled = false;
+
+            // Disable initialization step buttons until previous step is complete
+            button3.Enabled = false;  // Step 2 - активується після IN,1
+            button6.Enabled = false;  // Step 3 - активується після IN,2
+
             // Set initial selection mode for listBox1
             listBox1.SelectionMode = SelectionMode.One;
             // Set ranges for new numeric controls
             numericUpDownAz.KeyDown += NumericUpDownAz_KeyDown;
             numericUpDownAn.KeyDown += NumericUpDownAn_KeyDown;
+
+            // Завантажуємо налаштування забороненої зони
+            var settings = SettingsManager.Current;
+            numFobStart.Value = settings.Scan.ForbiddenZoneStart;
+            numFobEnd.Value = settings.Scan.ForbiddenZoneEnd;
+
+            // Встановлюємо діапазони для азимутів забороненої зони (повний круг 0-359°)
+            azUpDown3.Minimum = 0;
+            azUpDown3.Maximum = 359;
+            azUpDown2.Minimum = 0;
+            azUpDown2.Maximum = 359;
+
+            // Підключаємо обробники для конвертації азимут <-> кут антени
+            azUpDown3.ValueChanged += AzUpDown3_ValueChanged;
+            azUpDown2.ValueChanged += AzUpDown2_ValueChanged;
+
+            // Зберігаємо при зміні значень
+            numFobStart.ValueChanged += NumFobStart_ValueChanged;
+            numFobEnd.ValueChanged += NumFobEnd_ValueChanged;
+
+            // Ініціалізуємо азимути з кутів (після підключення обробників вони будуть синхронізовані)
+            // Початкове значення _anAzValue = 0, тому:
+            // azUpDown3: AZ = AN + AN_AZ - 180 = 175 + 0 - 180 = -5 -> 355
+            // azUpDown2: AZ = AN + AN_AZ - 180 = 185 + 0 - 180 = 5
+            int startAz = (settings.Scan.ForbiddenZoneStart + _anAzValue - 180 + 360) % 360;
+            int endAz = (settings.Scan.ForbiddenZoneEnd + _anAzValue - 180 + 360) % 360;
+            azUpDown3.Value = startAz;
+            azUpDown2.Value = endAz;
 
             // Setup richTextBox1
             richTextBox1.ReadOnly = true;
@@ -130,6 +162,16 @@ namespace TestApp
                 }
 
                 int azimuth = (int)numericUpDownAz.Value;
+
+                // Перевіряємо чи азимут не в сліпій зоні
+                if (_mapController != null && _mapController.IsInForbiddenZone(azimuth))
+                {
+                    int correctedAzimuth = GetNearestAllowedAzimuth(azimuth);
+                    numericUpDownAz.Value = correctedAzimuth;
+                    azimuth = correctedAzimuth;
+                    Console.WriteLine($"Азимут {(int)numericUpDownAz.Value} у сліпій зоні. Скориговано до {correctedAzimuth}");
+                }
+
                 SendCommand($"$AZ,{azimuth};");
             }
         }
@@ -144,10 +186,18 @@ namespace TestApp
                     StopScanning();
                 }
 
-                if(float.TryParse(label12.Text, out float az))
+                if (float.TryParse(label12.Text, out float az))
                 {
                     int azimuth = (int)az + value;
                     azimuth = azimuth > 359 ? 0 : azimuth < 0 ? 359 : azimuth;
+
+                    // Перевіряємо чи азимут не в сліпій зоні
+                    if (_mapController != null && _mapController.IsInForbiddenZone(azimuth))
+                    {
+                        azimuth = GetNearestAllowedAzimuth(azimuth);
+                        Console.WriteLine($"Азимут у сліпій зоні. Скориговано до {azimuth}");
+                    }
+
                     SendCommand($"$AZ,{azimuth};");
                 }
             }
@@ -254,6 +304,9 @@ namespace TestApp
         {
             try
             {
+                // Зберігаємо поточні налаштування карти перед закриттям
+                SaveCurrentMapSettings();
+
                 // Закриваємо Form2 якщо вона відкрита
                 if (_form2 != null && !_form2.IsDisposed)
                 {
@@ -280,23 +333,7 @@ namespace TestApp
                 }
 
                 // Очищення ресурсів карти
-                if (_azimuthLine != null)
-                {
-                    _routesOverlay?.Routes.Remove(_azimuthLine);
-                    _azimuthLine = null;
-                }
-
-                if (_azimuthPolygon != null)
-                {
-                    _routesOverlay?.Polygons.Remove(_azimuthPolygon);
-                    _azimuthPolygon = null;
-                }
-
-                if (_forbiddenPolygon != null)
-                {
-                    _routesOverlay?.Polygons.Remove(_forbiddenPolygon);
-                    _forbiddenPolygon = null;
-                }
+                // MapController тепер керує _azimuthLine, _azimuthPolygon та _forbiddenPolygon
 
                 if (_stationMarker != null)
                 {
@@ -331,10 +368,6 @@ namespace TestApp
             _serial = new Serial();
             _serial.OnMessageReceived += OnSerialMessageReceived;
             _serial.OnStateChanged += OnSerialStateChanged;
-
-            _simulator = new DeviceSimulator();
-            _simulator.OnMessageReceived += OnSerialMessageReceived;
-            _simulator.OnStateChanged += OnSimulatorStateChanged;
         }
 
         private void InitializeRefreshTimer()
@@ -369,15 +402,18 @@ namespace TestApp
 
         private void InitializeMap()
         {
+            // Завантажуємо налаштування
+            var settings = SettingsManager.Current;
+
             // Налаштування GMap.NET
             gMapControl1.MapProvider = GMapProviders.OpenStreetMap;
             GMaps.Instance.Mode = AccessMode.ServerAndCache;
 
-            // Встановлюємо центр карти (Київ, Україна як приклад)
-            gMapControl1.Position = new PointLatLng(50.4501, 30.5234);
+            // Встановлюємо центр карти з налаштувань
+            gMapControl1.Position = new PointLatLng(settings.Map.Latitude, settings.Map.Longitude);
             gMapControl1.MinZoom = 2;
             gMapControl1.MaxZoom = 18;
-            gMapControl1.Zoom = 10;
+            gMapControl1.Zoom = settings.Map.Zoom;
 
             // Налаштування відображення
             gMapControl1.ShowCenter = true; // Показуємо хрестик по центру
@@ -388,6 +424,12 @@ namespace TestApp
             _routesOverlay = new GMapOverlay("routes");
             gMapControl1.Overlays.Add(_routesOverlay);
             gMapControl1.Overlays.Add(_markersOverlay);
+
+            // Ініціалізуємо MapPreviewRenderer для малювання preview лінії
+            _mapPreviewRenderer = new MapPreviewRenderer(gMapControl1, _mapToolTip);
+
+            // Ініціалізуємо MapController для керування картою
+            _mapController = new MapController(gMapControl1, _routesOverlay);
 
             // Додати обробник для оновлення лінії при зміні азимуту
             label12.TextChanged += Label12_TextChanged;
@@ -412,6 +454,14 @@ namespace TestApp
                 if (_stationMarker != null && gMapControl1.IsMouseOverMarker)
                 {
                     UpdateAzimuthLine();
+
+                    // Зберігаємо нові координати станції після переміщення
+                    SettingsManager.Update(s =>
+                    {
+                        s.Station.Latitude = _stationMarker.Position.Lat;
+                        s.Station.Longitude = _stationMarker.Position.Lng;
+                        s.Station.IsSet = true;
+                    });
                 }
             };
 
@@ -420,7 +470,20 @@ namespace TestApp
             gMapControl1.MouseLeave += GMapControl1_MouseLeave;
             gMapControl1.MouseClick += GMapControl1_MouseClick;
 
-            buttonSetCoords_Click(new object(), new EventArgs());
+            // Обробники для автоматичного збереження позиції та зуму карти
+            gMapControl1.OnPositionChanged += GMapControl1_OnPositionChanged;
+            gMapControl1.OnMapZoomChanged += GMapControl1_OnMapZoomChanged;
+
+            // Завантажуємо збережені координати станції якщо вони є
+            if (settings.Station.IsSet)
+            {
+                LoadStationFromSettings();
+            }
+            else
+            {
+                buttonSetCoords_Click(new object(), new EventArgs());
+            }
+
             ButtonSettingsGet_Click(new object(), new EventArgs());
         }
 
@@ -502,14 +565,7 @@ namespace TestApp
                     string log = $"[{timestamp}] TX: {cmd}\n";
                     try
                     {
-                        if (_useSimulator)
-                        {
-                            _simulator.Command = cmd;
-                        }
-                        else
-                        {
-                            _serial.Command = cmd;
-                        }
+                        _serial.Command = cmd;
                     }
                     catch (Exception ex)
                     {
@@ -543,15 +599,6 @@ namespace TestApp
                 var selectedItem = listBox1.SelectedItem;
 
                 listBox1.Items.Clear();
-
-                // Add simulator as first item
-                var simulatorInfo = new SerialPortInfo
-                {
-                    PortName = "SIMULATOR",
-                    Description = "Симулятор пристрою",
-                    IsAvailable = true
-                };
-                listBox1.Items.Add(simulatorInfo);
 
                 foreach (var port in portInfos)
                 {
@@ -722,6 +769,71 @@ namespace TestApp
                             numericBreackAngle.Value = (decimal)Math.Max(1.0f, Math.Min(90.0f, brk));
                         }
                     }
+                    else if (trimmedPart.StartsWith("IN,"))
+                    {
+                        string inStr = trimmedPart.Substring(3).Trim();
+                        Console.WriteLine($"DEBUG: Обробка IN команди. trimmedPart='{trimmedPart}', inStr='{inStr}'");
+
+                        if (int.TryParse(inStr, out int inValue))
+                        {
+                            Console.WriteLine($"DEBUG: Parsed IN value = {inValue}");
+
+                            switch (inValue)
+                            {
+                                case 0:
+                                    // Повернення до початку - вимикаємо всі кнопки
+                                    button3.Enabled = false;
+                                    button6.Enabled = false;
+                                    panel2.Enabled = false;
+                                    groupBox4.Enabled = false;
+                                    Console.WriteLine("Ініціалізація скинута (IN,0). Усі кнопки вимкнено.");
+                                    break;
+
+                                case 1:
+                                    // Крок 1 завершено - активуємо кнопку кроку 2
+                                    button3.Enabled = true;
+                                    button6.Enabled = false;
+                                    panel2.Enabled = false;
+                                    groupBox4.Enabled = false;
+                                    Console.WriteLine("Крок 1 завершено (IN,1). Активовано кнопку кроку 2.");
+                                    break;
+
+                                case 2:
+                                    // Крок 2 завершено - активуємо кнопку кроку 3, button3 залишається активною
+                                    button3.Enabled = true;
+                                    button6.Enabled = true;
+                                    panel2.Enabled = false;
+                                    groupBox4.Enabled = false;
+                                    Console.WriteLine("Крок 2 завершено (IN,2). Активовано кнопку кроку 3.");
+                                    break;
+
+                                case 3:
+                                    // Крок 3 завершено - обидві кнопки залишаються активними до IN,4
+                                    button3.Enabled = true;
+                                    button6.Enabled = true;
+                                    panel2.Enabled = false;
+                                    groupBox4.Enabled = false;
+                                    Console.WriteLine("Крок 3 завершено (IN,3). Очікування IN,4...");
+                                    break;
+
+                                case 4:
+                                    // Ініціалізація повністю завершена
+                                    Console.WriteLine("DEBUG: Виконується case 4 для IN,4");
+                                    button3.Enabled = false;
+                                    button6.Enabled = false;
+                                    panel2.Enabled = true;
+                                    groupBox4.Enabled = true;
+                                    Console.WriteLine($"DEBUG: panel2.Enabled = {panel2.Enabled}, groupBox4.Enabled = {groupBox4.Enabled}");
+                                    Console.WriteLine("Ініціалізація завершена (IN,4). Панелі управління активовано.");
+                                    break;
+
+                                default:
+                                    // Інші значення IN - не змінюємо стан кнопок
+                                    Console.WriteLine($"Невідомий стан ініціалізації (IN,{inValue}).");
+                                    break;
+                            }
+                        }
+                    }
                 }
 
                 // Calculate AN_AZ from received AZ and AN values
@@ -732,6 +844,9 @@ namespace TestApp
                     int calculatedAnAz = (receivedAz.Value - receivedAn.Value + 180 + 360) % 360;
                     _anAzValue = calculatedAnAz;
                     labelAN_AZ.Text = calculatedAnAz.ToString("000");
+
+                    // Оновлюємо азимути забороненої зони при зміні AN_AZ
+                    UpdateForbiddenZoneAzimuths();
 
                     // Оновлюємо полігони на карті при зміні AN_AZ
                     if (_stationMarker != null)
@@ -777,6 +892,9 @@ namespace TestApp
 
                         ButtonSettingsGet_Click(new object(), new EventArgs());
                         groupBox1.Enabled = true;
+
+                        // Відправляємо запит статусу ініціалізації
+                        SendCommand("#IN");
                         break;
 
                     case Serial.State.Disconnected:
@@ -792,8 +910,12 @@ namespace TestApp
                             StopScanning();
                         }
 
-                        // Disable controls in groupBox1 when disconnected
+                        // Disable controls when disconnected
                         groupBox1.Enabled = false;
+                        panel2.Enabled = false;
+                        groupBox4.Enabled = false;
+                        button3.Enabled = false;
+                        button6.Enabled = false;
 
                         LoadSerialPorts();
                         break;
@@ -806,6 +928,10 @@ namespace TestApp
                         _dataRequestTimer?.Stop();
 
                         groupBox1.Enabled = false;
+                        panel2.Enabled = false;
+                        groupBox4.Enabled = false;
+                        button3.Enabled = false;
+                        button6.Enabled = false;
 
                         LoadSerialPorts();
                         break;
@@ -826,14 +952,7 @@ namespace TestApp
             if (_isConnected)
             {
                 // Disconnect
-                if (_useSimulator)
-                {
-                    _simulator.Disconnect();
-                }
-                else
-                {
-                    _serial.Disconnect();
-                }
+                _serial.Disconnect();
             }
             else
             {
@@ -845,16 +964,7 @@ namespace TestApp
 
                     try
                     {
-                        if (selectedPort.PortName == "SIMULATOR")
-                        {
-                            _useSimulator = true;
-                            _simulator.Connect();
-                        }
-                        else
-                        {
-                            _useSimulator = false;
-                            _serial.Connect(selectedPort.PortName);
-                        }
+                        _serial.Connect(selectedPort.PortName);
                     }
                     catch (Exception)
                     {
@@ -911,20 +1021,20 @@ namespace TestApp
 
         private void button6_Click(object sender, EventArgs e)
         {
-            // Крок 3: Завершити
+            // Крок 3: Калібрування антени
             if (_isConnected)
             {
-                SendCommand("$IN,4;#IN;");
+                SendCommand("$IN,3;#IN;");
             }
         }
 
         private void button7_Click(object sender, EventArgs e)
         {
-            // Задати азимут
+            // Задати азимут антени (під час ініціалізації)
             if (_isConnected)
             {
                 int azimuth = (int)numericUpDown1.Value;
-                SendCommand($"$AN_AZ,{azimuth};");
+                SendCommand($"$AN_AZ,{azimuth};$IN,3;");
             }
         }
 
@@ -933,7 +1043,7 @@ namespace TestApp
             // Крок 4: Початок роботи
             if (_isConnected)
             {
-                SendCommand("START_OPERATION");
+                SendCommand("$IN,4;#IN;");
             }
         }
 
@@ -1365,70 +1475,6 @@ namespace TestApp
             }
         }
 
-        private void OnSimulatorStateChanged(DeviceSimulator.SimulatorState state, string message)
-        {
-            if (InvokeRequired)
-            {
-                try
-                {
-                    Invoke(new Action<DeviceSimulator.SimulatorState, string>(OnSimulatorStateChanged), state, message);
-                }
-                catch (ObjectDisposedException)
-                {
-                    return;
-                }
-                return;
-            }
-
-            try
-            {
-                switch (state)
-                {
-                    case DeviceSimulator.SimulatorState.Connected:
-                        _isConnected = true;
-                        button1.Text = "Відключити";
-                        button1.Enabled = true;
-                        _refreshTimer?.Stop();
-                        _dataRequestTimer?.Start();
-                        groupBox1.Enabled = true;
-                        break;
-
-                    case DeviceSimulator.SimulatorState.Disconnected:
-                        _isConnected = false;
-                        button1.Text = "Підключити";
-                        button1.Enabled = true;
-                        _refreshTimer?.Start();
-                        _dataRequestTimer?.Stop();
-
-                        if (_isScanning)
-                        {
-                            StopScanning();
-                        }
-
-                        groupBox1.Enabled = false;
-                        LoadSerialPorts();
-                        break;
-
-                    case DeviceSimulator.SimulatorState.Error:
-                        _isConnected = false;
-                        button1.Text = "Підключити";
-                        button1.Enabled = true;
-                        _refreshTimer?.Start();
-                        _dataRequestTimer?.Stop();
-                        groupBox1.Enabled = false;
-                        LoadSerialPorts();
-                        break;
-                }
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error in OnSimulatorStateChanged: {ex.Message}");
-            }
-        }
-
         private void buttonSetCoords_Click(object sender, EventArgs e)
         {
             if (_markersOverlay == null) return;
@@ -1455,7 +1501,18 @@ namespace TestApp
             // Малюємо початкову лінію азимуту
             UpdateAzimuthLine();
 
+            // Зберігаємо координати станції в налаштуваннях
+            SettingsManager.Update(s =>
+            {
+                s.Station.Latitude = centerPosition.Lat;
+                s.Station.Longitude = centerPosition.Lng;
+                s.Station.IsSet = true;
+            });
+
             gMapControl1.Refresh();
+
+            // Оновлюємо зовнішню карту якщо вона відкрита
+            _mapForm?.UpdateMapData();
         }
 
         private void Label12_TextChanged(object? sender, EventArgs e)
@@ -1469,229 +1526,31 @@ namespace TestApp
 
         private void UpdateAzimuthLine()
         {
-            if (_stationMarker == null || _routesOverlay == null) return;
+            if (_mapController == null || _stationMarker == null) return;
 
-            try
-            {
-                // Видаляємо стару лінію
-                if (_azimuthLine != null)
-                {
-                    _routesOverlay.Routes.Remove(_azimuthLine);
-                    _azimuthLine = null;
-                }
+            // Оновлюємо дані в MapController
+            _mapController.StationMarker = _stationMarker;
+            _mapController.LastKnownAzimuth = _lastKnownAzimuth;
+            _mapController.AnAzValue = _anAzValue;
+            _mapController.ForbiddenStartAN = (int)numFobStart.Value;
+            _mapController.ForbiddenEndAN = (int)numFobEnd.Value;
 
-                // Видаляємо старий полігон
-                if (_azimuthPolygon != null)
-                {
-                    _routesOverlay.Polygons.Remove(_azimuthPolygon);
-                    _azimuthPolygon = null;
-                }
+            // Викликаємо метод оновлення
+            _mapController.UpdateAzimuthLine();
 
-                // Обчислюємо кінцеву точку лінії на відстані 150 км
-                PointLatLng startPoint = _stationMarker.Position;
-                PointLatLng endPoint = CalculateDestinationPoint(startPoint, _lastKnownAzimuth, 150.0);
-
-                // Створюємо нову лінію
-                List<PointLatLng> points = new List<PointLatLng> { startPoint, endPoint };
-                _azimuthLine = new GMapRoute(points, "azimuth");
-                _azimuthLine.Stroke = new Pen(Color.BlueViolet, 3);
-
-                _routesOverlay.Routes.Add(_azimuthLine);
-
-                // Створюємо полігон: центр, ліва точка (-7°), права точка (+7°)
-                double leftAzimuth = (_lastKnownAzimuth - 7 + 360) % 360;
-                double rightAzimuth = (_lastKnownAzimuth + 7) % 360;
-
-                PointLatLng leftPoint = CalculateDestinationPoint(startPoint, leftAzimuth, 150.0);
-                PointLatLng rightPoint = CalculateDestinationPoint(startPoint, rightAzimuth, 150.0);
-
-                List<PointLatLng> polygonPoints = new List<PointLatLng>
-                {
-                    startPoint,
-                    leftPoint,
-                    rightPoint
-                };
-
-                _azimuthPolygon = new GMapPolygon(polygonPoints, "azimuthPolygon");
-                _azimuthPolygon.Fill = new SolidBrush(Color.FromArgb(102, Color.BlueViolet)); // 0.4 opacity = 102/255
-                _azimuthPolygon.Stroke = new Pen(Color.BlueViolet, 1);
-
-                _routesOverlay.Polygons.Add(_azimuthPolygon);
-
-                // Видаляємо старий заборонений полігон
-                if (_forbiddenPolygon != null)
-                {
-                    _routesOverlay.Polygons.Remove(_forbiddenPolygon);
-                    _forbiddenPolygon = null;
-                }
-
-                // Створюємо заборонений полігон за кутом AN_AZ на 50 км
-                double forbiddenLeftAzimuth = (_anAzValue - 7 + 360) % 360;
-                double forbiddenRightAzimuth = (_anAzValue + 7) % 360;
-
-                PointLatLng forbiddenLeftPoint = CalculateDestinationPoint(startPoint, forbiddenLeftAzimuth, 50.0);
-                PointLatLng forbiddenRightPoint = CalculateDestinationPoint(startPoint, forbiddenRightAzimuth, 50.0);
-
-                List<PointLatLng> forbiddenPolygonPoints = new List<PointLatLng>
-                {
-                    startPoint,
-                    forbiddenLeftPoint,
-                    forbiddenRightPoint
-                };
-
-                _forbiddenPolygon = new GMapPolygon(forbiddenPolygonPoints, "forbiddenPolygon");
-                _forbiddenPolygon.Fill = new SolidBrush(Color.FromArgb(102, Color.Red)); // 0.4 opacity = 102/255
-                _forbiddenPolygon.Stroke = new Pen(Color.Transparent, 0); // Без бордера
-
-                _routesOverlay.Polygons.Add(_forbiddenPolygon);
-
-                if (gMapControl1 != null && !gMapControl1.IsDisposed)
-                {
-                    gMapControl1.Refresh();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error in UpdateAzimuthLine: {ex.Message}");
-            }
-        }
-
-        private PointLatLng CalculateDestinationPoint(PointLatLng start, double bearing, double distanceKm)
-        {
-            // Радіус Землі в км
-            const double earthRadius = 6371.0;
-
-            // Переводимо в радіани
-            double lat1 = start.Lat * Math.PI / 180.0;
-            double lon1 = start.Lng * Math.PI / 180.0;
-            double bearingRad = bearing * Math.PI / 180.0;
-            double distRad = distanceKm / earthRadius;
-
-            // Обчислюємо нову широту
-            double lat2 = Math.Asin(
-                Math.Sin(lat1) * Math.Cos(distRad) +
-                Math.Cos(lat1) * Math.Sin(distRad) * Math.Cos(bearingRad)
-            );
-
-            // Обчислюємо нову довготу
-            double lon2 = lon1 + Math.Atan2(
-                Math.Sin(bearingRad) * Math.Sin(distRad) * Math.Cos(lat1),
-                Math.Cos(distRad) - Math.Sin(lat1) * Math.Sin(lat2)
-            );
-
-            // Переводимо назад у градуси
-            double lat2Deg = lat2 * 180.0 / Math.PI;
-            double lon2Deg = lon2 * 180.0 / Math.PI;
-
-            return new PointLatLng(lat2Deg, lon2Deg);
-        }
-
-        private double CalculateAzimuth(PointLatLng from, PointLatLng to)
-        {
-            // Обчислює азимут від точки from до точки to
-            double lat1 = from.Lat * Math.PI / 180.0;
-            double lon1 = from.Lng * Math.PI / 180.0;
-            double lat2 = to.Lat * Math.PI / 180.0;
-            double lon2 = to.Lng * Math.PI / 180.0;
-
-            double dLon = lon2 - lon1;
-
-            double y = Math.Sin(dLon) * Math.Cos(lat2);
-            double x = Math.Cos(lat1) * Math.Sin(lat2) -
-                       Math.Sin(lat1) * Math.Cos(lat2) * Math.Cos(dLon);
-
-            double azimuthRad = Math.Atan2(y, x);
-            double azimuthDeg = azimuthRad * 180.0 / Math.PI;
-
-            // Нормалізуємо до діапазону 0-360
-            azimuthDeg = (azimuthDeg + 360.0) % 360.0;
-
-            return azimuthDeg;
-        }
-
-        private double CalculateDistance(PointLatLng from, PointLatLng to)
-        {
-            // Обчислює відстань між двома точками в км (формула Haversine)
-            const double earthRadius = 6371.0;
-
-            double lat1 = from.Lat * Math.PI / 180.0;
-            double lon1 = from.Lng * Math.PI / 180.0;
-            double lat2 = to.Lat * Math.PI / 180.0;
-            double lon2 = to.Lng * Math.PI / 180.0;
-
-            double dLat = lat2 - lat1;
-            double dLon = lon2 - lon1;
-
-            double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
-                       Math.Cos(lat1) * Math.Cos(lat2) *
-                       Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
-
-            double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-            double distance = earthRadius * c;
-
-            return distance;
+            // Оновлюємо зовнішню карту якщо вона відкрита
+            _mapForm?.UpdateMapData();
         }
 
         private void GMapControl1_MouseMove(object? sender, MouseEventArgs e)
         {
             if (_stationMarker == null || _routesOverlay == null) return;
-
-            try
-            {
-                // Отримуємо координати миші на мапі
-                PointLatLng mousePosition = gMapControl1.FromLocalToLatLng(e.X, e.Y);
-
-                // Обчислюємо азимут від маркера до миші
-                double azimuth = CalculateAzimuth(_stationMarker.Position, mousePosition);
-
-                // Обчислюємо відстань від маркера до миші
-                double distance = CalculateDistance(_stationMarker.Position, mousePosition);
-
-                // Видаляємо стару лінію попереднього перегляду
-                if (_mousePreviewLine != null)
-                {
-                    _routesOverlay.Routes.Remove(_mousePreviewLine);
-                }
-
-                // Створюємо нову пунктирну лінію з підказкою азимуту
-                List<PointLatLng> points = new List<PointLatLng>
-                {
-                    _stationMarker.Position,
-                    mousePosition
-                };
-
-                _mousePreviewLine = new GMapRoute(points, "mousePreview")
-                {
-                    Stroke = _mousePreviewPen
-                };
-
-                _routesOverlay.Routes.Add(_mousePreviewLine);
-
-                // Встановлюємо підказку з азимутом та відстанню
-                string tooltipText = $"аз {azimuth:000.0}°\nд {distance:0.0}км";
-                _mapToolTip.SetToolTip(gMapControl1, tooltipText);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error in GMapControl1_MouseMove: {ex.Message}");
-            }
+            _mapPreviewRenderer?.HandleMouseMove(_stationMarker, e, _anAzValue);
         }
 
         private void GMapControl1_MouseLeave(object? sender, EventArgs e)
         {
-            try
-            {
-                // Видаляємо лінію попереднього перегляду коли мишка покидає мапу
-                if (_mousePreviewLine != null && _routesOverlay != null)
-                {
-                    _routesOverlay.Routes.Remove(_mousePreviewLine);
-                    _mousePreviewLine = null;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error in GMapControl1_MouseLeave: {ex.Message}");
-            }
+            _mapPreviewRenderer?.HandleMouseLeave();
         }
 
         private void GMapControl1_MouseClick(object? sender, MouseEventArgs e)
@@ -1704,7 +1563,7 @@ namespace TestApp
                     PointLatLng clickPosition = gMapControl1.FromLocalToLatLng(e.X, e.Y);
 
                     // Обчислюємо азимут від маркера до точки кліка
-                    double azimuth = CalculateAzimuth(_stationMarker.Position, clickPosition);
+                    double azimuth = MapPreviewRenderer.CalculateAzimuth(_stationMarker.Position, clickPosition);
 
                     // Округлюємо до цілих
                     int azimuthInt = (int)Math.Round(azimuth);
@@ -1774,30 +1633,34 @@ namespace TestApp
 
         private void ButtonSaveAz_Click(object? sender, EventArgs e)
         {
-            if (_stationMarker == null || _routesOverlay == null) return;
+            if (_mapController == null || _stationMarker == null)
+            {
+                Console.WriteLine("ButtonSaveAz_Click: _mapController or _stationMarker is null");
+                return;
+            }
 
             try
             {
                 // Отримуємо поточний азимут з label12
                 if (float.TryParse(label12.Text, out float azimuth))
                 {
-                    // Обчислюємо кінцеву точку лінії на відстані 150 км
-                    PointLatLng startPoint = _stationMarker.Position;
-                    PointLatLng endPoint = CalculateDestinationPoint(startPoint, azimuth, 150.0);
-
-                    // Створюємо нову пунктирну напівпрозору лінію для збереженого пеленгу
-                    List<PointLatLng> points = new List<PointLatLng> { startPoint, endPoint };
-                    GMapRoute savedLine = new GMapRoute(points, $"saved_azimuth_{azimuth:000.0}");
+                    Console.WriteLine($"ButtonSaveAz_Click: Saving azimuth {azimuth}°");
                     
-                    // Напівпрозорий червоний колір (128 = 50% прозорості)
-                    Pen dashedPen = new Pen(Color.FromArgb(128, Color.Red), 2);
-                    dashedPen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
-                    savedLine.Stroke = dashedPen;
+                    // Оновлюємо дані в MapController
+                    _mapController.StationMarker = _stationMarker;
+                    _mapController.LastKnownAzimuth = azimuth;
 
-                    _routesOverlay.Routes.Add(savedLine);
-                    _savedBearingLines.Add(savedLine);
+                    // Зберігаємо пеленг
+                    _mapController.SaveAzimuth();
 
-                    gMapControl1.Refresh();
+                    Console.WriteLine($"ButtonSaveAz_Click: Saved. Total saved bearings: {_mapController.GetSavedBearingsCount()}");
+
+                    // Оновлюємо зовнішню карту якщо вона відкрита
+                    _mapForm?.UpdateMapData();
+                }
+                else
+                {
+                    Console.WriteLine($"ButtonSaveAz_Click: Failed to parse azimuth from label12.Text = '{label12.Text}'");
                 }
             }
             catch (Exception ex)
@@ -1808,22 +1671,559 @@ namespace TestApp
 
         private void ButtonClearAz_Click(object? sender, EventArgs e)
         {
-            if (_routesOverlay == null) return;
+            if (_mapController == null) return;
 
             try
             {
-                // Видаляємо всі збережені лінії пеленгів
-                foreach (var line in _savedBearingLines)
-                {
-                    _routesOverlay.Routes.Remove(line);
-                }
-                _savedBearingLines.Clear();
+                // Очищаємо всі збережені пеленги
+                _mapController.ClearAzimuths();
 
-                gMapControl1.Refresh();
+                // Оновлюємо зовнішню карту якщо вона відкрита
+                _mapForm?.UpdateMapData();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in ButtonClearAz_Click: {ex.Message}");
+            }
+        }
+
+        private void label12_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label28_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        // ================ Методи для роботи з налаштуваннями ================
+
+        /// <summary>
+        /// Завантажити координати станції з налаштувань
+        /// </summary>
+        private void LoadStationFromSettings()
+        {
+            if (_markersOverlay == null) return;
+
+            try
+            {
+                var settings = SettingsManager.Current;
+                PointLatLng stationPosition = new PointLatLng(settings.Station.Latitude, settings.Station.Longitude);
+
+                if (_stationMarker != null)
+                {
+                    _markersOverlay.Markers.Remove(_stationMarker);
+                    _stationMarker = null;
+                }
+
+                _stationMarker = new GMarkerGoogle(stationPosition, GMarkerGoogleType.red_small);
+                _stationMarker.ToolTipText = "Станція пеленгації";
+                _stationMarker.IsHitTestVisible = true;
+                _stationMarker.Tag = "station";
+                _markersOverlay.Markers.Add(_stationMarker);
+
+                UpdateAzimuthLine();
+                gMapControl1.Refresh();
+
+                // Оновлюємо зовнішню карту якщо вона відкрита
+                _mapForm?.UpdateMapData();
+
+                Console.WriteLine($"Координати станції завантажено: {stationPosition.Lat:F4}, {stationPosition.Lng:F4}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Помилка при завантаженні координат станції: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Зберегти поточні налаштування карти
+        /// </summary>
+        private void SaveCurrentMapSettings()
+        {
+            try
+            {
+                SettingsManager.Update(s =>
+                {
+                    s.Map.Latitude = gMapControl1.Position.Lat;
+                    s.Map.Longitude = gMapControl1.Position.Lng;
+                    s.Map.Zoom = gMapControl1.Zoom;
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Помилка при збереженні налаштувань карти: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Обробник зміни позиції карти
+        /// </summary>
+        private void GMapControl1_OnPositionChanged(PointLatLng point)
+        {
+            // Зберігаємо позицію автоматично при її зміні
+            try
+            {
+                SettingsManager.Update(s =>
+                {
+                    s.Map.Latitude = point.Lat;
+                    s.Map.Longitude = point.Lng;
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Помилка при збереженні позиції карти: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Обробник зміни зуму карти
+        /// </summary>
+        private void GMapControl1_OnMapZoomChanged()
+        {
+            // Зберігаємо зум автоматично при його зміні
+            try
+            {
+                SettingsManager.Update(s =>
+                {
+                    s.Map.Zoom = gMapControl1.Zoom;
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Помилка при збереженні зуму карти: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Обробник зміни початку забороненої зони
+        /// </summary>
+        private void NumFobStart_ValueChanged(object? sender, EventArgs e)
+        {
+            if (_isUpdatingForbiddenZone) return;
+
+            try
+            {
+                _isUpdatingForbiddenZone = true;
+
+                SettingsManager.Update(s =>
+                {
+                    s.Scan.ForbiddenZoneStart = (int)numFobStart.Value;
+                    s.Scan.ForbiddenZoneEnd = (int)numFobEnd.Value;
+                });
+
+                // Оновлюємо відповідний азимут (зворотна конвертація: кут -> азимут)
+                int anAngle = (int)numFobStart.Value;
+                int azimuth = (anAngle + _anAzValue - 180 + 360) % 360;
+                azUpDown3.Value = azimuth;
+
+                // Перемальовуємо полігон сліпої зони
+                UpdateAzimuthLine();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Помилка при збереженні початку забороненої зони: {ex.Message}");
+            }
+            finally
+            {
+                _isUpdatingForbiddenZone = false;
+            }
+        }
+
+        /// <summary>
+        /// Обробник зміни кінця забороненої зони
+        /// </summary>
+        private void NumFobEnd_ValueChanged(object? sender, EventArgs e)
+        {
+            if (_isUpdatingForbiddenZone) return;
+
+            try
+            {
+                _isUpdatingForbiddenZone = true;
+
+                SettingsManager.Update(s =>
+                {
+                    s.Scan.ForbiddenZoneStart = (int)numFobStart.Value;
+                    s.Scan.ForbiddenZoneEnd = (int)numFobEnd.Value;
+                });
+
+                // Оновлюємо відповідний азимут (зворотня конвертація: кут -> азимут)
+                int anAngle = (int)numFobEnd.Value;
+                int azimuth = (anAngle + _anAzValue - 180 + 360) % 360;
+                azUpDown2.Value = azimuth;
+
+                // Перемальовуємо полігон сліпої зони
+                UpdateAzimuthLine();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Помилка при збереженні кінця забороної зони: {ex.Message}");
+            }
+            finally
+            {
+                _isUpdatingForbiddenZone = false;
+            }
+        }
+
+        /// <summary>
+        /// Обробник зміни початкового азимуту сліпої зони - конвертує в кут антени
+        /// </summary>
+        private void AzUpDown3_ValueChanged(object? sender, EventArgs e)
+        {
+            if (_isUpdatingForbiddenZone) return;
+
+            try
+            {
+                _isUpdatingForbiddenZone = true;
+
+                // Конвертуємо азимут в кут антени: AN = AZ - AN_AZ + 180
+                int azimuth = (int)azUpDown3.Value;
+                int anAngle = (azimuth - _anAzValue + 180 + 360) % 360;
+                numFobStart.Value = anAngle;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Помилка при конвертації початкового азимуту: {ex.Message}");
+            }
+            finally
+            {
+                _isUpdatingForbiddenZone = false;
+            }
+        }
+
+        /// <summary>
+        /// Обробник зміни кінцевого азимуту сліпої зони - конвертує в кут антени
+        /// </summary>
+        private void AzUpDown2_ValueChanged(object? sender, EventArgs e)
+        {
+            if (_isUpdatingForbiddenZone) return;
+
+            try
+            {
+                _isUpdatingForbiddenZone = true;
+
+                // Конвертуємо азимут в кут антени: AN = AZ - AN_AZ + 180
+                int azimuth = (int)azUpDown2.Value;
+                int anAngle = (azimuth - _anAzValue + 180 + 360) % 360;
+                numFobEnd.Value = anAngle;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Помилка при конвертації кінцевого азимуту: {ex.Message}");
+            }
+            finally
+            {
+                _isUpdatingForbiddenZone = false;
+            }
+        }
+
+        /// <summary>
+        /// Оновлює азимути забороненої зони при зміні AN_AZ
+        /// </summary>
+        private void UpdateForbiddenZoneAzimuths()
+        {
+            if (_isUpdatingForbiddenZone) return;
+
+            try
+            {
+                _isUpdatingForbiddenZone = true;
+
+                // Конвертуємо поточні кути антени в азимути: AZ = AN + AN_AZ - 180
+                int startAngle = (int)numFobStart.Value;
+                int endAngle = (int)numFobEnd.Value;
+
+                int startAz = (startAngle + _anAzValue - 180 + 360) % 360;
+                int endAz = (endAngle + _anAzValue - 180 + 360) % 360;
+
+                azUpDown3.Value = startAz;
+                azUpDown2.Value = endAz;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Помилка при оновленні азимутів забороненої зони: {ex.Message}");
+            }
+            finally
+            {
+                _isUpdatingForbiddenZone = false;
+            }
+        }
+
+        /// <summary>
+        /// Отримати найближчий дозволений азимут (поза сліпою зоною)
+        /// </summary>
+        private int GetNearestAllowedAzimuth(int requestedAzimuth)
+        {
+            if (_mapController == null) return requestedAzimuth;
+
+            // Оновлюємо дані в MapController
+            _mapController.AnAzValue = _anAzValue;
+            _mapController.ForbiddenStartAN = (int)numFobStart.Value;
+            _mapController.ForbiddenEndAN = (int)numFobEnd.Value;
+
+            if (!_mapController.IsInForbiddenZone(requestedAzimuth))
+                return requestedAzimuth;
+
+            // Конвертуємо заборонену зону з кута антени в азимут
+            int forbiddenStartAN = (int)numFobStart.Value;
+            int forbiddenEndAN = (int)numFobEnd.Value;
+            int forbiddenStartAZ = ((forbiddenStartAN + _anAzValue - 180) + 360) % 360;
+            int forbiddenEndAZ = ((forbiddenEndAN + _anAzValue - 180) + 360) % 360;
+
+            // Дозволені точки знаходяться за межами забороненої зони
+            int beforeStart = ((forbiddenStartAZ - 1) + 360) % 360;
+            int afterEnd = (forbiddenEndAZ + 1) % 360;
+
+            // Обчислюємо колову відстань до дозволених точок
+            int distToBefore = requestedAzimuth >= beforeStart
+                ? requestedAzimuth - beforeStart
+                : requestedAzimuth + 360 - beforeStart;
+
+            int distToAfter = afterEnd >= requestedAzimuth
+                ? afterEnd - requestedAzimuth
+                : afterEnd + 360 - requestedAzimuth;
+
+            // Враховуємо колову відстань
+            if (distToBefore > 180) distToBefore = 360 - distToBefore;
+            if (distToAfter > 180) distToAfter = 360 - distToAfter;
+
+            // Повертаємо найближчу дозволену точку
+            return distToBefore <= distToAfter ? beforeStart : afterEnd;
+        }
+
+        private void button9_Click_1(object sender, EventArgs e)
+        {
+            LoadSerialPorts();
+        }
+
+        private void label29_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void numFobEnd_ValueChanged_1(object sender, EventArgs e)
+        {
+
+        }
+
+        private MapForm? _mapForm = null;
+
+        private void buttonMap_Click(object sender, EventArgs e)
+        {
+            // Якщо форма мапи вже відкрита, активуємо її
+            if (_mapForm != null && !_mapForm.IsDisposed)
+            {
+                _mapForm.Activate();
+                return;
+            }
+
+            // Приховуємо карту в головному вікні (зберігаючи всі властивості)
+            groupBoxMap.Visible = false;
+
+            // Створюємо та відкриваємо нову форму з картою
+            _mapForm = new MapForm(this);
+            _mapForm.Show();
+        }
+
+        /// <summary>
+        /// Викликається коли форма мапи закривається
+        /// </summary>
+        public void OnMapFormClosed()
+        {
+            // Показуємо карту в головному вікні назад
+            groupBoxMap.Visible = true;
+            _mapForm = null;
+        }
+
+        /// <summary>
+        /// Повертає налаштування карти для зовнішньої форми
+        /// </summary>
+        public (double Latitude, double Longitude, double Zoom) GetMapSettings()
+        {
+            return (gMapControl1.Position.Lat, gMapControl1.Position.Lng, gMapControl1.Zoom);
+        }
+
+        /// <summary>
+        /// Повертає значення AN_AZ для зовнішньої форми
+        /// </summary>
+        public int GetAnAzValue()
+        {
+            return _anAzValue;
+        }
+
+        /// <summary>
+        /// Копіює маркери та лінії до зовнішніх оверлеїв
+        /// </summary>
+        public void CopyMapDataToExternal(GMapOverlay markersOverlay, GMapOverlay routesOverlay)
+        {
+            Console.WriteLine($"Form1.CopyMapDataToExternal called. _markersOverlay is null: {_markersOverlay == null}, _mapController is null: {_mapController == null}");
+            if (_markersOverlay != null)
+            {
+                _mapController?.CopyMapDataToExternal(markersOverlay, routesOverlay, _markersOverlay);
+            }
+            else
+            {
+                Console.WriteLine("Form1.CopyMapDataToExternal: _markersOverlay is null, cannot copy");
+            }
+        }
+
+        /// <summary>
+        /// Обробник переміщення маркера на зовнішній карті
+        /// </summary>
+        public void OnExternalMapMarkerMoved(GMapOverlay markersOverlay, GMapOverlay routesOverlay)
+        {
+            // Знаходимо маркер станції на зовнішній карті
+            GMapMarker? externalMarker = null;
+            foreach (var marker in markersOverlay.Markers)
+            {
+                if (marker.Tag?.ToString() == "station")
+                {
+                    externalMarker = marker;
+                    break;
+                }
+            }
+
+            if (externalMarker != null && _stationMarker != null)
+            {
+                // Оновлюємо позицію основного маркера
+                _stationMarker.Position = externalMarker.Position;
+
+                // Зберігаємо нові координати
+                SettingsManager.Update(s =>
+                {
+                    s.Station.Latitude = externalMarker.Position.Lat;
+                    s.Station.Longitude = externalMarker.Position.Lng;
+                    s.Station.IsSet = true;
+                });
+
+                // Оновлюємо лінію азимуту на основній карті
+                UpdateAzimuthLine();
+
+                // Оновлюємо зовнішню карту
+                _mapForm?.UpdateMapData();
+            }
+        }
+
+        /// <summary>
+        /// Обробник правого кліку на зовнішній карті
+        /// </summary>
+        public void OnExternalMapRightClick(PointLatLng clickPosition)
+        {
+            if (_stationMarker == null) return;
+
+            try
+            {
+                // Обчислюємо азимут
+                double azimuth = MapPreviewRenderer.CalculateAzimuth(_stationMarker.Position, clickPosition);
+                int azimuthInt = (int)Math.Round(azimuth);
+                azimuthInt = azimuthInt == 360 ? 0 : azimuthInt;
+
+                // Встановлюємо значення
+                numericUpDownAz.Value = azimuthInt;
+                BtnAz_Click(this, EventArgs.Empty);
+
+                // Оновлюємо зовнішню карту
+                _mapForm?.UpdateMapData();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in OnExternalMapRightClick: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Встановлює азимут з зовнішньої карти
+        /// </summary>
+        public void SetAzimuthFromExternalMap(int azimuth)
+        {
+            try
+            {
+                numericUpDownAz.Value = azimuth;
+                BtnAz_Click(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in SetAzimuthFromExternalMap: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Встановлює координати станції з зовнішньої карти
+        /// </summary>
+        public void SetStationCoordinatesFromExternal()
+        {
+            try
+            {
+                // Отримуємо поточну позицію центру зовнішньої карти
+                // Використовуємо центр основної карти якщо зовнішня не доступна
+                if (_mapForm != null && _mapForm.MarkersOverlay != null)
+                {
+                    // Викликаємо метод встановлення координат через основну карту
+                    buttonSetCoords_Click(this, EventArgs.Empty);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in SetStationCoordinatesFromExternal: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Зберігає пеленг з зовнішньої карти
+        /// </summary>
+        public void SaveAzimuthFromExternal()
+        {
+            try
+            {
+                ButtonSaveAz_Click(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in SaveAzimuthFromExternal: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Очищає пеленги з зовнішньої карти
+        /// </summary>
+        public void ClearAzimuthsFromExternal()
+        {
+            try
+            {
+                ButtonClearAz_Click(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in ClearAzimuthsFromExternal: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Оновлює позицію станції з зовнішньої карти
+        /// </summary>
+        public void UpdateStationPositionFromExternal(PointLatLng position)
+        {
+            try
+            {
+                if (_stationMarker != null)
+                {
+                    _stationMarker.Position = position;
+
+                    // Зберігаємо нові координати
+                    SettingsManager.Update(s =>
+                    {
+                        s.Station.Latitude = position.Lat;
+                        s.Station.Longitude = position.Lng;
+                        s.Station.IsSet = true;
+                    });
+
+                    // Оновлюємо лінію азимуту
+                    UpdateAzimuthLine();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in UpdateStationPositionFromExternal: {ex.Message}");
             }
         }
     }

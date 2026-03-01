@@ -1,0 +1,33 @@
+.logging-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 8px;
+
+    p {
+        margin: 0;
+    }
+}
+
+.logging-scroll {
+    flex: 1;
+    font-family: monospace;
+    font-size: 12px;
+    border-radius: 4px;
+}
+
+.logging-empty {
+    color: var(--mantine-color-dimmed);
+}
+
+.logging-line {
+    margin-bottom: 2px;
+
+    &--tx {
+        color: #4dabf7;
+    }
+
+    &--rx {
+        color: #51cf66;
+    }
+}

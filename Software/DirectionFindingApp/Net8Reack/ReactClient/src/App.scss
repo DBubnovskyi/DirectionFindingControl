@@ -1,0 +1,186 @@
+.App {
+    display: grid;
+    grid-template-columns: repeat(96, 19px);
+    grid-auto-rows: 19px;
+    gap: 5px;
+    padding: 10px;
+}
+
+.drag-placeholder {
+    border: 2px dashed rgba(0, 123, 255, 0.6);
+    background-color: rgba(0, 123, 255, 0.1);
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 999;
+}
+
+html,
+body {
+    font-family: Helvetica, sans-serif !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+body {
+    * {
+        font-family: inherit !important;
+    }
+}
+
+.app-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 150%;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.1;
+
+    svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+}
+
+/* Стилі для react-grid-layout */
+.layout {
+    background-color: transparent;
+}
+
+.react-grid-item {
+    transition: all 200ms ease;
+    transition-property: left, top, width, height;
+    min-height: 1px !important;
+
+    &.react-grid-placeholder {
+        background: rgba(0, 123, 255, 0.15);
+        border-radius: 8px;
+        border: 2px dashed rgba(0, 123, 255, 0.4);
+        opacity: 0.5;
+        transition-duration: 100ms;
+        z-index: 2;
+    }
+
+    &.resizing {
+        transition: none;
+        z-index: 100;
+        will-change: width, height;
+    }
+
+    &.static {
+        background: #ccc;
+    }
+
+    >.react-resizable-handle {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+
+        &::after {
+            content: "";
+            position: absolute;
+            right: 3px;
+            bottom: 3px;
+            width: 8px;
+            height: 8px;
+            border-right: 2px solid rgba(0, 0, 0, 0.4);
+            border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+        }
+    }
+}
+
+.react-resizable-hide {
+    >.react-resizable-handle {
+        display: none;
+    }
+}
+
+.drag-handle {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+/* Стилі для блоків */
+.block-container {
+    height: 100%;
+
+    &.quick-view {
+        position: absolute !important;
+        z-index: 1000 !important;
+        width: auto !important;
+        height: auto !important;
+        max-height: 80vh;
+        min-width: 400px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        pointer-events: auto;
+
+        .block-content {
+            max-height: calc(80vh - 80px);
+        }
+    }
+}
+
+.collapsed-block {
+    min-height: auto !important;
+}
+
+.block-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    flex-shrink: 0;
+    cursor: move;
+}
+
+.block-content {
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    &::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+
+        &:hover {
+            background: #555;
+        }
+    }
+}
+
+:root {
+    --mantine-scale: 1 !important;
+    --mantine-breakpoint-xs: 36em !important;
+    --mantine-breakpoint-sm: 48em !important;
+    --mantine-breakpoint-md: 62em !important;
+    --mantine-breakpoint-lg: 75em !important;
+    --mantine-breakpoint-xl: 88em !important;
+    --mantine-spacing-xs: calc(0.2rem * var(--mantine-scale)) !important;
+    --mantine-spacing-sm: calc(0.3rem * var(--mantine-scale)) !important;
+    --mantine-spacing-md: calc(0.5rem * var(--mantine-scale)) !important;
+    --mantine-spacing-lg: calc(0.625rem * var(--mantine-scale)) !important;
+    --mantine-spacing-xl: calc(0.8rem * var(--mantine-scale)) !important;
+    --mantine-font-size-xs: calc(0.75rem * var(--mantine-scale)) !important;
+    --mantine-font-size-sm: calc(0.875rem * var(--mantine-scale)) !important;
+    --mantine-font-size-md: calc(1rem * var(--mantine-scale)) !important;
+    --mantine-font-size-lg: calc(1.125rem * var(--mantine-scale)) !important;
+    --mantine-font-size-xl: calc(1.25rem * var(--mantine-scale)) !important;
+    --mantine-line-height-xs: 1 !important;
+    --mantine-line-height-sm: 1.2 !important;
+    --mantine-line-height-md: 1.4 !important;
+    --mantine-line-height-lg: 1.6 !important;
+    --mantine-line-height-xl: 1.65 !important;
+}

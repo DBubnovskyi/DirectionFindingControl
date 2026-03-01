@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             groupBox1 = new GroupBox();
             label11 = new Label();
             button8 = new Button();
@@ -51,16 +52,29 @@
             label1 = new Label();
             button1 = new Button();
             groupBoxMap = new GroupBox();
+            buttonRed = new Button();
+            label27 = new Label();
             buttonClearAz = new Button();
             buttonSaveAz = new Button();
-            buttonRed = new Button();
-            panel4 = new Panel();
-            label27 = new Label();
             buttonSetCoords = new Button();
             gMapControl1 = new GMap.NET.WindowsForms.GMapControl();
             panel1 = new Panel();
+            buttonMap = new Button();
+            button9 = new Button();
             panel3 = new Panel();
             richTextBox1 = new RichTextBox();
+            groupBox9 = new GroupBox();
+            label32 = new Label();
+            groupBox11 = new GroupBox();
+            label28 = new Label();
+            azUpDown2 = new NumericUpDown();
+            label31 = new Label();
+            azUpDown3 = new NumericUpDown();
+            groupBox10 = new GroupBox();
+            label29 = new Label();
+            numFobEnd = new NumericUpDown();
+            label30 = new Label();
+            numFobStart = new NumericUpDown();
             groupBox4 = new GroupBox();
             groupBox8 = new GroupBox();
             radioButton2 = new RadioButton();
@@ -104,12 +118,19 @@
             numericTolerance = new NumericUpDown();
             label15 = new Label();
             label14 = new Label();
+            panel4 = new Panel();
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
             groupBoxMap.SuspendLayout();
-            panel4.SuspendLayout();
             panel1.SuspendLayout();
             panel3.SuspendLayout();
+            groupBox9.SuspendLayout();
+            groupBox11.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)azUpDown2).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)azUpDown3).BeginInit();
+            groupBox10.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numFobEnd).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numFobStart).BeginInit();
             groupBox4.SuspendLayout();
             groupBox8.SuspendLayout();
             groupBox7.SuspendLayout();
@@ -128,6 +149,7 @@
             ((System.ComponentModel.ISupportInitialize)numericMaxSpeed).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericMinSpeed).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericTolerance).BeginInit();
+            panel4.SuspendLayout();
             SuspendLayout();
             // 
             // groupBox1
@@ -355,7 +377,7 @@
             // 
             // button1
             // 
-            button1.Location = new Point(3, 205);
+            button1.Location = new Point(3, 223);
             button1.Name = "button1";
             button1.Size = new Size(163, 23);
             button1.TabIndex = 3;
@@ -365,6 +387,7 @@
             // 
             // groupBoxMap
             // 
+            groupBoxMap.Controls.Add(buttonMap);
             groupBoxMap.Controls.Add(buttonRed);
             groupBoxMap.Controls.Add(panel4);
             groupBoxMap.Controls.Add(buttonClearAz);
@@ -374,39 +397,17 @@
             groupBoxMap.Dock = DockStyle.Fill;
             groupBoxMap.Location = new Point(810, 0);
             groupBoxMap.Name = "groupBoxMap";
-            groupBoxMap.Size = new Size(414, 761);
+            groupBoxMap.Size = new Size(414, 979);
             groupBoxMap.TabIndex = 9;
             groupBoxMap.TabStop = false;
             groupBoxMap.Text = "Мапа";
-            // 
-            // buttonClearAz
-            // 
-            buttonClearAz.BackColor = Color.SandyBrown;
-            buttonClearAz.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 204);
-            buttonClearAz.Location = new Point(9, 138);
-            buttonClearAz.Name = "buttonClearAz";
-            buttonClearAz.Size = new Size(182, 30);
-            buttonClearAz.TabIndex = 5;
-            buttonClearAz.Text = "Очисти пеленги";
-            buttonClearAz.UseVisualStyleBackColor = false;
-            // 
-            // buttonSaveAz
-            // 
-            buttonSaveAz.BackColor = SystemColors.ActiveCaption;
-            buttonSaveAz.CausesValidation = false;
-            buttonSaveAz.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 204);
-            buttonSaveAz.Location = new Point(6, 102);
-            buttonSaveAz.Name = "buttonSaveAz";
-            buttonSaveAz.Size = new Size(182, 30);
-            buttonSaveAz.TabIndex = 4;
-            buttonSaveAz.Text = "Зберегти пеленг";
-            buttonSaveAz.UseVisualStyleBackColor = false;
             // 
             // buttonRed
             // 
             buttonRed.BackColor = Color.Red;
             buttonRed.FlatAppearance.BorderColor = Color.Red;
             buttonRed.FlatAppearance.BorderSize = 0;
+            buttonRed.FlatStyle = FlatStyle.Flat;
             buttonRed.Location = new Point(134, 19);
             buttonRed.Name = "buttonRed";
             buttonRed.Size = new Size(203, 23);
@@ -416,18 +417,10 @@
             buttonRed.UseVisualStyleBackColor = false;
             buttonRed.Click += buttonRed_Click;
             // 
-            // panel4
-            // 
-            panel4.Controls.Add(label27);
-            panel4.Location = new Point(6, 46);
-            panel4.Name = "panel4";
-            panel4.Size = new Size(183, 50);
-            panel4.TabIndex = 2;
-            // 
             // label27
             // 
             label27.AutoSize = true;
-            label27.Location = new Point(3, 0);
+            label27.Location = new Point(3, 3);
             label27.MaximumSize = new Size(180, 0);
             label27.Name = "label27";
             label27.Size = new Size(179, 45);
@@ -435,8 +428,34 @@
             label27.Text = "Клік правою кнопкою миші по карті задає азтмут куди буде повернуто антену";
             label27.Click += label27_Click;
             // 
+            // buttonClearAz
+            // 
+            buttonClearAz.BackColor = Color.SandyBrown;
+            buttonClearAz.FlatStyle = FlatStyle.Flat;
+            buttonClearAz.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            buttonClearAz.Location = new Point(6, 140);
+            buttonClearAz.Name = "buttonClearAz";
+            buttonClearAz.Size = new Size(189, 30);
+            buttonClearAz.TabIndex = 5;
+            buttonClearAz.Text = "Очисти пеленги";
+            buttonClearAz.UseVisualStyleBackColor = false;
+            // 
+            // buttonSaveAz
+            // 
+            buttonSaveAz.BackColor = SystemColors.ActiveCaption;
+            buttonSaveAz.CausesValidation = false;
+            buttonSaveAz.FlatStyle = FlatStyle.Flat;
+            buttonSaveAz.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            buttonSaveAz.Location = new Point(6, 109);
+            buttonSaveAz.Name = "buttonSaveAz";
+            buttonSaveAz.Size = new Size(189, 30);
+            buttonSaveAz.TabIndex = 4;
+            buttonSaveAz.Text = "Зберегти пеленг";
+            buttonSaveAz.UseVisualStyleBackColor = false;
+            // 
             // buttonSetCoords
             // 
+            buttonSetCoords.FlatStyle = FlatStyle.Flat;
             buttonSetCoords.Location = new Point(6, 19);
             buttonSetCoords.Name = "buttonSetCoords";
             buttonSetCoords.Size = new Size(122, 23);
@@ -469,12 +488,13 @@
             gMapControl1.ScaleMode = GMap.NET.WindowsForms.ScaleModes.Integer;
             gMapControl1.SelectedAreaFillColor = Color.FromArgb(33, 65, 105, 225);
             gMapControl1.ShowTileGridLines = false;
-            gMapControl1.Size = new Size(408, 739);
+            gMapControl1.Size = new Size(408, 957);
             gMapControl1.TabIndex = 0;
             gMapControl1.Zoom = 5D;
             // 
             // panel1
             // 
+            panel1.Controls.Add(button9);
             panel1.Controls.Add(listBox1);
             panel1.Controls.Add(groupBox1);
             panel1.Controls.Add(label1);
@@ -485,16 +505,39 @@
             panel1.Size = new Size(810, 252);
             panel1.TabIndex = 10;
             // 
+            // buttonMap
+            // 
+            buttonMap.BackColor = SystemColors.MenuHighlight;
+            buttonMap.FlatStyle = FlatStyle.Flat;
+            buttonMap.Location = new Point(201, 48);
+            buttonMap.Name = "buttonMap";
+            buttonMap.Size = new Size(136, 55);
+            buttonMap.TabIndex = 5;
+            buttonMap.Text = "Відкрити мапу в окремому вікні";
+            buttonMap.UseVisualStyleBackColor = false;
+            buttonMap.Click += buttonMap_Click;
+            // 
+            // button9
+            // 
+            button9.Location = new Point(2, 198);
+            button9.Name = "button9";
+            button9.Size = new Size(163, 23);
+            button9.TabIndex = 4;
+            button9.Text = "Оновити";
+            button9.UseVisualStyleBackColor = true;
+            button9.Click += button9_Click_1;
+            // 
             // panel3
             // 
             panel3.Controls.Add(richTextBox1);
+            panel3.Controls.Add(groupBox9);
             panel3.Controls.Add(groupBox4);
             panel3.Controls.Add(panel2);
             panel3.Controls.Add(panel1);
             panel3.Dock = DockStyle.Left;
             panel3.Location = new Point(0, 0);
             panel3.Name = "panel3";
-            panel3.Size = new Size(810, 761);
+            panel3.Size = new Size(810, 979);
             panel3.TabIndex = 12;
             // 
             // richTextBox1
@@ -503,12 +546,146 @@
             richTextBox1.Dock = DockStyle.Fill;
             richTextBox1.Font = new Font("Consolas", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             richTextBox1.ForeColor = SystemColors.ButtonShadow;
-            richTextBox1.Location = new Point(0, 606);
+            richTextBox1.Location = new Point(0, 727);
             richTextBox1.Name = "richTextBox1";
             richTextBox1.ReadOnly = true;
-            richTextBox1.Size = new Size(810, 155);
-            richTextBox1.TabIndex = 24;
+            richTextBox1.Size = new Size(810, 252);
+            richTextBox1.TabIndex = 26;
             richTextBox1.Text = "";
+            // 
+            // groupBox9
+            // 
+            groupBox9.Controls.Add(label32);
+            groupBox9.Controls.Add(groupBox11);
+            groupBox9.Controls.Add(groupBox10);
+            groupBox9.Dock = DockStyle.Top;
+            groupBox9.Location = new Point(0, 606);
+            groupBox9.Name = "groupBox9";
+            groupBox9.Size = new Size(810, 121);
+            groupBox9.TabIndex = 25;
+            groupBox9.TabStop = false;
+            groupBox9.Text = "Сліпа зона";
+            // 
+            // label32
+            // 
+            label32.AutoSize = true;
+            label32.Font = new Font("Microsoft Sans Serif", 9F, FontStyle.Regular, GraphicsUnit.Point, 1, true);
+            label32.Location = new Point(207, 29);
+            label32.MaximumSize = new Size(400, 0);
+            label32.Name = "label32";
+            label32.Size = new Size(398, 75);
+            label32.TabIndex = 23;
+            label32.Text = resources.GetString("label32.Text");
+            // 
+            // groupBox11
+            // 
+            groupBox11.Controls.Add(label28);
+            groupBox11.Controls.Add(azUpDown2);
+            groupBox11.Controls.Add(label31);
+            groupBox11.Controls.Add(azUpDown3);
+            groupBox11.Location = new Point(9, 22);
+            groupBox11.Name = "groupBox11";
+            groupBox11.Size = new Size(186, 89);
+            groupBox11.TabIndex = 38;
+            groupBox11.TabStop = false;
+            groupBox11.Text = "АЗИМУТ";
+            // 
+            // label28
+            // 
+            label28.AutoSize = true;
+            label28.Font = new Font("Segoe UI", 12F);
+            label28.Location = new Point(6, 19);
+            label28.Name = "label28";
+            label28.Size = new Size(95, 21);
+            label28.TabIndex = 35;
+            label28.Text = "початковий";
+            // 
+            // azUpDown2
+            // 
+            azUpDown2.Font = new Font("Segoe UI", 12F);
+            azUpDown2.Location = new Point(107, 52);
+            azUpDown2.Maximum = new decimal(new int[] { 359, 0, 0, 0 });
+            azUpDown2.Minimum = new decimal(new int[] { 185, 0, 0, 0 });
+            azUpDown2.Name = "azUpDown2";
+            azUpDown2.Size = new Size(67, 29);
+            azUpDown2.TabIndex = 33;
+            azUpDown2.Value = new decimal(new int[] { 185, 0, 0, 0 });
+            // 
+            // label31
+            // 
+            label31.AutoSize = true;
+            label31.Font = new Font("Segoe UI", 12F);
+            label31.Location = new Point(17, 54);
+            label31.Name = "label31";
+            label31.Size = new Size(75, 21);
+            label31.TabIndex = 36;
+            label31.Text = "кінцевий";
+            // 
+            // azUpDown3
+            // 
+            azUpDown3.Font = new Font("Segoe UI", 12F);
+            azUpDown3.Location = new Point(107, 17);
+            azUpDown3.Maximum = new decimal(new int[] { 175, 0, 0, 0 });
+            azUpDown3.Name = "azUpDown3";
+            azUpDown3.Size = new Size(67, 29);
+            azUpDown3.TabIndex = 32;
+            azUpDown3.Value = new decimal(new int[] { 175, 0, 0, 0 });
+            // 
+            // groupBox10
+            // 
+            groupBox10.Controls.Add(label29);
+            groupBox10.Controls.Add(numFobEnd);
+            groupBox10.Controls.Add(label30);
+            groupBox10.Controls.Add(numFobStart);
+            groupBox10.Location = new Point(618, 22);
+            groupBox10.Name = "groupBox10";
+            groupBox10.Size = new Size(186, 89);
+            groupBox10.TabIndex = 37;
+            groupBox10.TabStop = false;
+            groupBox10.Text = "КУТ";
+            // 
+            // label29
+            // 
+            label29.AutoSize = true;
+            label29.Font = new Font("Segoe UI", 12F);
+            label29.Location = new Point(6, 19);
+            label29.Name = "label29";
+            label29.Size = new Size(95, 21);
+            label29.TabIndex = 35;
+            label29.Text = "початковий";
+            label29.Click += label29_Click;
+            // 
+            // numFobEnd
+            // 
+            numFobEnd.Font = new Font("Segoe UI", 12F);
+            numFobEnd.Location = new Point(107, 52);
+            numFobEnd.Maximum = new decimal(new int[] { 359, 0, 0, 0 });
+            numFobEnd.Minimum = new decimal(new int[] { 185, 0, 0, 0 });
+            numFobEnd.Name = "numFobEnd";
+            numFobEnd.Size = new Size(67, 29);
+            numFobEnd.TabIndex = 33;
+            numFobEnd.Value = new decimal(new int[] { 185, 0, 0, 0 });
+            numFobEnd.ValueChanged += numFobEnd_ValueChanged_1;
+            // 
+            // label30
+            // 
+            label30.AutoSize = true;
+            label30.Font = new Font("Segoe UI", 12F);
+            label30.Location = new Point(17, 54);
+            label30.Name = "label30";
+            label30.Size = new Size(75, 21);
+            label30.TabIndex = 36;
+            label30.Text = "кінцевий";
+            // 
+            // numFobStart
+            // 
+            numFobStart.Font = new Font("Segoe UI", 12F);
+            numFobStart.Location = new Point(107, 17);
+            numFobStart.Maximum = new decimal(new int[] { 175, 0, 0, 0 });
+            numFobStart.Name = "numFobStart";
+            numFobStart.Size = new Size(67, 29);
+            numFobStart.TabIndex = 32;
+            numFobStart.Value = new decimal(new int[] { 175, 0, 0, 0 });
             // 
             // groupBox4
             // 
@@ -731,7 +908,7 @@
             groupBox2.Font = new Font("Segoe UI", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
             groupBox2.Location = new Point(3, 3);
             groupBox2.Name = "groupBox2";
-            groupBox2.Size = new Size(260, 180);
+            groupBox2.Size = new Size(244, 180);
             groupBox2.TabIndex = 4;
             groupBox2.TabStop = false;
             groupBox2.Text = "Азимут";
@@ -739,9 +916,9 @@
             // buttonAzRight
             // 
             buttonAzRight.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 204);
-            buttonAzRight.Location = new Point(169, 35);
+            buttonAzRight.Location = new Point(155, 35);
             buttonAzRight.Name = "buttonAzRight";
-            buttonAzRight.Size = new Size(84, 37);
+            buttonAzRight.Size = new Size(78, 37);
             buttonAzRight.TabIndex = 4;
             buttonAzRight.Text = "Право";
             buttonAzRight.UseVisualStyleBackColor = true;
@@ -752,7 +929,7 @@
             buttonAzLeft.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 204);
             buttonAzLeft.Location = new Point(6, 35);
             buttonAzLeft.Name = "buttonAzLeft";
-            buttonAzLeft.Size = new Size(89, 37);
+            buttonAzLeft.Size = new Size(66, 37);
             buttonAzLeft.TabIndex = 3;
             buttonAzLeft.Text = "Ліво";
             buttonAzLeft.UseVisualStyleBackColor = true;
@@ -761,17 +938,18 @@
             // label12
             // 
             label12.AutoSize = true;
-            label12.Location = new Point(96, 35);
+            label12.Location = new Point(78, 35);
             label12.Name = "label12";
             label12.Size = new Size(71, 32);
             label12.TabIndex = 2;
             label12.Text = "000.0";
+            label12.Click += label12_Click;
             // 
             // btnAz
             // 
             btnAz.Location = new Point(6, 126);
             btnAz.Name = "btnAz";
-            btnAz.Size = new Size(248, 41);
+            btnAz.Size = new Size(227, 41);
             btnAz.TabIndex = 1;
             btnAz.Text = "Задати";
             btnAz.UseVisualStyleBackColor = true;
@@ -782,7 +960,7 @@
             numericUpDownAz.Location = new Point(6, 81);
             numericUpDownAz.Maximum = new decimal(new int[] { 359, 0, 0, 0 });
             numericUpDownAz.Name = "numericUpDownAz";
-            numericUpDownAz.Size = new Size(248, 39);
+            numericUpDownAz.Size = new Size(227, 39);
             numericUpDownAz.TabIndex = 0;
             // 
             // groupBox3
@@ -791,9 +969,9 @@
             groupBox3.Controls.Add(btnAn);
             groupBox3.Controls.Add(numericUpDownAn);
             groupBox3.Font = new Font("Segoe UI", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
-            groupBox3.Location = new Point(534, 3);
+            groupBox3.Location = new Point(581, 3);
             groupBox3.Name = "groupBox3";
-            groupBox3.Size = new Size(260, 180);
+            groupBox3.Size = new Size(229, 180);
             groupBox3.TabIndex = 5;
             groupBox3.TabStop = false;
             groupBox3.Text = "Кут";
@@ -801,7 +979,7 @@
             // label13
             // 
             label13.AutoSize = true;
-            label13.Location = new Point(96, 35);
+            label13.Location = new Point(69, 40);
             label13.Name = "label13";
             label13.Size = new Size(71, 32);
             label13.TabIndex = 3;
@@ -812,7 +990,7 @@
             // 
             btnAn.Location = new Point(6, 126);
             btnAn.Name = "btnAn";
-            btnAn.Size = new Size(246, 41);
+            btnAn.Size = new Size(191, 41);
             btnAn.TabIndex = 2;
             btnAn.Text = "Задати";
             btnAn.UseVisualStyleBackColor = true;
@@ -823,7 +1001,7 @@
             numericUpDownAn.Location = new Point(6, 81);
             numericUpDownAn.Maximum = new decimal(new int[] { 359, 0, 0, 0 });
             numericUpDownAn.Name = "numericUpDownAn";
-            numericUpDownAn.Size = new Size(246, 39);
+            numericUpDownAn.Size = new Size(191, 39);
             numericUpDownAn.TabIndex = 1;
             // 
             // groupBox5
@@ -841,9 +1019,9 @@
             groupBox5.Controls.Add(label15);
             groupBox5.Controls.Add(label14);
             groupBox5.Font = new Font("Segoe UI", 18F);
-            groupBox5.Location = new Point(269, 3);
+            groupBox5.Location = new Point(250, 3);
             groupBox5.Name = "groupBox5";
-            groupBox5.Size = new Size(259, 180);
+            groupBox5.Size = new Size(327, 180);
             groupBox5.TabIndex = 8;
             groupBox5.TabStop = false;
             groupBox5.Text = "Параметри";
@@ -851,7 +1029,7 @@
             // buttonSettigsGet
             // 
             buttonSettigsGet.Font = new Font("Segoe UI", 8F);
-            buttonSettigsGet.Location = new Point(182, 21);
+            buttonSettigsGet.Location = new Point(190, 21);
             buttonSettigsGet.Name = "buttonSettigsGet";
             buttonSettigsGet.Size = new Size(71, 24);
             buttonSettigsGet.TabIndex = 31;
@@ -862,7 +1040,7 @@
             // buttonSettingsSet
             // 
             buttonSettingsSet.Font = new Font("Segoe UI", 8F);
-            buttonSettingsSet.Location = new Point(199, 51);
+            buttonSettingsSet.Location = new Point(267, 21);
             buttonSettingsSet.Name = "buttonSettingsSet";
             buttonSettingsSet.Size = new Size(54, 24);
             buttonSettingsSet.TabIndex = 30;
@@ -972,11 +1150,19 @@
             label14.TabIndex = 3;
             label14.Text = "швидкість:";
             // 
+            // panel4
+            // 
+            panel4.Controls.Add(label27);
+            panel4.Location = new Point(6, 48);
+            panel4.Name = "panel4";
+            panel4.Size = new Size(189, 55);
+            panel4.TabIndex = 2;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1224, 761);
+            ClientSize = new Size(1224, 979);
             Controls.Add(groupBoxMap);
             Controls.Add(panel3);
             MinimumSize = new Size(282, 476);
@@ -986,11 +1172,19 @@
             groupBox1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).EndInit();
             groupBoxMap.ResumeLayout(false);
-            panel4.ResumeLayout(false);
-            panel4.PerformLayout();
             panel1.ResumeLayout(false);
             panel1.PerformLayout();
             panel3.ResumeLayout(false);
+            groupBox9.ResumeLayout(false);
+            groupBox9.PerformLayout();
+            groupBox11.ResumeLayout(false);
+            groupBox11.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)azUpDown2).EndInit();
+            ((System.ComponentModel.ISupportInitialize)azUpDown3).EndInit();
+            groupBox10.ResumeLayout(false);
+            groupBox10.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numFobEnd).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numFobStart).EndInit();
             groupBox4.ResumeLayout(false);
             groupBox8.ResumeLayout(false);
             groupBox8.PerformLayout();
@@ -1015,6 +1209,8 @@
             ((System.ComponentModel.ISupportInitialize)numericMaxSpeed).EndInit();
             ((System.ComponentModel.ISupportInitialize)numericMinSpeed).EndInit();
             ((System.ComponentModel.ISupportInitialize)numericTolerance).EndInit();
+            panel4.ResumeLayout(false);
+            panel4.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -1046,7 +1242,6 @@
         private GMap.NET.WindowsForms.GMapControl gMapControl1;
         private Panel panel1;
         private Panel panel3;
-        private RichTextBox richTextBox1;
         private GroupBox groupBox4;
         private GroupBox groupBox8;
         private RadioButton radioButton2;
@@ -1089,12 +1284,27 @@
         private Label label15;
         private Label label14;
         private Button buttonSetCoords;
-        private Panel panel4;
         private Label label27;
+        private Button buttonMap;
         private Button buttonRed;
         private Button buttonAzRight;
         private Button buttonAzLeft;
         private Button buttonSaveAz;
         private Button buttonClearAz;
+        private NumericUpDown numFobEnd;
+        private NumericUpDown numFobStart;
+        private Label label30;
+        private Label label29;
+        private Button button9;
+        private GroupBox groupBox9;
+        private GroupBox groupBox10;
+        private Label label32;
+        private GroupBox groupBox11;
+        private Label label28;
+        private NumericUpDown azUpDown2;
+        private Label label31;
+        private NumericUpDown azUpDown3;
+        private RichTextBox richTextBox1;
+        private Panel panel4;
     }
 }

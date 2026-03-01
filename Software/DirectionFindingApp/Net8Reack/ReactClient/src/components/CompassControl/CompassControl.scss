@@ -1,0 +1,78 @@
+.compass-control {
+  width: 100%;
+  padding: 0;
+}
+
+.compass_container {
+  position: relative;
+  aspect-ratio: 1/1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+
+  img,
+  object {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    pointer-events: all;
+  }
+}
+
+
+
+.svg {
+  &.top {
+    fill: #76D9EB;
+    stroke: #438e9b;
+    stroke-width: 2;
+  }
+
+  &.bottom {
+    fill: #e0dd46;
+    stroke: #868532;
+    stroke-width: 2;
+  }
+
+  &.text_top {
+    font-family: monospace;
+    dominant-baseline: middle;
+    text-anchor: middle;
+    fill: #438e9b;
+    stroke-width: 0;
+    font-size: 1rem;
+    font-weight: bold;
+  }
+
+  &.value_top {
+    font-family: monospace;
+    dominant-baseline: middle;
+    text-anchor: middle;
+    fill: #438e9b;
+    stroke-width: 0;
+    font-size: 3rem;
+    font-weight: bold;
+  }
+
+  &.text_bottom {
+    font-family: monospace;
+    dominant-baseline: middle;
+    text-anchor: middle;
+    fill: #868532;
+    stroke-width: 0;
+    font-size: 1rem;
+    font-weight: bold;
+  }
+
+  &.value_bottom {
+    font-family: monospace;
+    dominant-baseline: middle;
+    text-anchor: middle;
+    fill: #868532;
+    stroke-width: 0;
+    font-size: 3rem;
+    font-weight: bold;
+  }
+}

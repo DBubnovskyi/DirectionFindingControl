@@ -1,0 +1,40 @@
+﻿<nav class="navbar is-link">
+    <div class="navbar-menu">
+        <div class="navbar-start">
+            <a class="navbar-item" href="/main">Адміністрування</a>
+            <a class="navbar-item" href="/">Керування</a>
+        </div>
+        <div class="navbar-end">
+            <div class="navbar-item">
+
+
+                @code {
+                    private DateTime time = DateTime.UtcNow;
+                    private System.Threading.Timer? _timer;
+
+                    protected override void OnInitialized()
+                    {
+                        _timer = new System.Threading.Timer(_ =>
+                        {
+                            _ = InvokeAsync(() =>{
+                                StateHasChanged();
+                                time = DateTime.UtcNow;
+                        });
+                        }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+                    }
+
+                    public void Dispose()
+                    {
+                        _timer?.Dispose();
+                    }
+                }
+                <p>
+                    <span>@time.ToString("dd.mm.yyyy")</span>
+                </p>
+                <p style="width: 110px">
+                    <span>@time.ToString("HH:mm:ss")</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</nav>
