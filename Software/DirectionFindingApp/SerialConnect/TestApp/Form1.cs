@@ -45,9 +45,6 @@ namespace TestApp
         private int _currentSpeed = 0;
         private int _anAzValue = 0; // Азимут на якому знаходиться кут 180
         private const int DefaultRotationSpeed = 30; // deg/sec used for timeout when unknown
-#pragma warning disable CS0414 // Field is assigned but never used
-        private bool _rotationTimedOut = false;
-#pragma warning restore CS0414
         private int _scanRetryIntervalMs = 300; // retry waiting for stop
 
         private float _lastKnownAzimuth = 0.0f;
@@ -79,6 +76,10 @@ namespace TestApp
         {
             // Disable groupBox1 controls until connected
             groupBox1.Enabled = false;
+            if (SettingsManager.Current.Initialization.IsAutoInit)
+            {
+                buttonSaveInit.BackColor = Color.LightGreen;
+            }
 
             // Disable main control panels until initialization complete (IN,4)
             panel2.Enabled = false;
@@ -87,6 +88,8 @@ namespace TestApp
             // Disable initialization step buttons until previous step is complete
             button3.Enabled = false;  // Step 2 - активується після IN,1
             button6.Enabled = false;  // Step 3 - активується після IN,2
+            // Refresh button disabled until connected
+            button9.Enabled = true;
 
             // Set initial selection mode for listBox1
             listBox1.SelectionMode = SelectionMode.One;
@@ -129,9 +132,22 @@ namespace TestApp
             richTextBox1.ForeColor = Color.LimeGreen;
             richTextBox1.Text = "Serial Monitor Ready...\n";
 
-            // Add event handlers for new buttons
+            numericScanStep.Value = settings.Scan.Step;
+            numericAzScanStart.ValueChanged += (sender, e) =>
+            {
+                SettingsManager.Update(s => s.Scan.Step = (int)numericScanStep.Value);
+            };
 
+            numericScanTime.Value = settings.Scan.ScanTime;
+            numericScanTime.ValueChanged += (sender, e) =>
+            {
+                SettingsManager.Update(s => s.Scan.ScanTime = (int)numericScanTime.Value);
+            };
+
+            // Add event handlers for new buttons
+            numericAzScanStart.Value = settings.Scan.StartAzimuth;
             numericAzScanStart.ValueChanged += NumericAzScan_ValueChanged;
+            numericAzScanEnd.Value = settings.Scan.EndAzimuth;
             numericAzScanEnd.ValueChanged += NumericAzScan_ValueChanged;
 
 
@@ -293,12 +309,6 @@ namespace TestApp
                 btnAn.PerformClick();
             }
         }
-
-
-
-
-
-
 
         private void Form1_FormClosing(object? sender, FormClosingEventArgs e)
         {
@@ -545,7 +555,6 @@ namespace TestApp
             {
                 // Timeout: device didn't report stop in time
                 _rotationTimeoutTimer?.Stop();
-                _rotationTimedOut = true;
                 Console.WriteLine("Rotation timeout triggered - device did not report stop. Will wait for SP==0 before advancing.");
                 // Do NOT call OnRotationStopped here - we must wait for a confirmed SP==0
             }
@@ -769,6 +778,14 @@ namespace TestApp
                             numericBreackAngle.Value = (decimal)Math.Max(1.0f, Math.Min(90.0f, brk));
                         }
                     }
+                    else if (trimmedPart.StartsWith("ER,"))
+                    {
+                        string er = trimmedPart.Substring(3).Trim();
+                        if (int.TryParse(er, out int erValue))
+                        {
+                            labelMagnetError.Text = erValue.ToString();
+                        }
+                    }
                     else if (trimmedPart.StartsWith("IN,"))
                     {
                         string inStr = trimmedPart.Substring(3).Trim();
@@ -787,40 +804,92 @@ namespace TestApp
                                     panel2.Enabled = false;
                                     groupBox4.Enabled = false;
                                     Console.WriteLine("Ініціалізація скинута (IN,0). Усі кнопки вимкнено.");
+                                    if (SettingsManager.Current.Initialization.IsAutoInit)
+                                    {
+                                        button2.Enabled = false;
+                                        SendCommand("$IN,1;#IN;");
+                                    }
                                     break;
 
                                 case 1:
                                     // Крок 1 завершено - активуємо кнопку кроку 2
-                                    button3.Enabled = true;
+                                    label2.BackColor = Color.Transparent;
+                                    label5.BackColor = Color.SkyBlue;
+                                    label7.BackColor = Color.Transparent;
+                                    label9.BackColor = Color.Transparent;
                                     button6.Enabled = false;
                                     panel2.Enabled = false;
                                     groupBox4.Enabled = false;
                                     Console.WriteLine("Крок 1 завершено (IN,1). Активовано кнопку кроку 2.");
+                                    if (SettingsManager.Current.Initialization.IsAutoInit)
+                                    {
+                                        button2.Enabled = false;
+                                        SendCommand("$IN,3;#IN;");
+                                    }
+                                    else
+                                    {
+                                        button3.Enabled = true;
+                                    }
                                     break;
 
                                 case 2:
                                     // Крок 2 завершено - активуємо кнопку кроку 3, button3 залишається активною
-                                    button3.Enabled = true;
-                                    button6.Enabled = true;
+                                    label2.BackColor = Color.Transparent;
+                                    label5.BackColor = Color.SkyBlue;
+                                    label7.BackColor = Color.Transparent;
+                                    label9.BackColor = Color.Transparent;
                                     panel2.Enabled = false;
                                     groupBox4.Enabled = false;
                                     Console.WriteLine("Крок 2 завершено (IN,2). Активовано кнопку кроку 3.");
+                                    if (SettingsManager.Current.Initialization.IsAutoInit)
+                                    {
+                                        button2.Enabled = false;
+                                        SendCommand("$IN,4;#IN;");
+                                    }
+                                    else
+                                    {
+                                        button3.Enabled = true;
+                                        button6.Enabled = true;
+                                    }
                                     break;
 
                                 case 3:
                                     // Крок 3 завершено - обидві кнопки залишаються активними до IN,4
-                                    button3.Enabled = true;
-                                    button6.Enabled = true;
+                                    label2.BackColor = Color.Transparent;
+                                    label5.BackColor = Color.Transparent;
+                                    label7.BackColor = Color.SkyBlue;
+                                    label9.BackColor = Color.Transparent;
                                     panel2.Enabled = false;
                                     groupBox4.Enabled = false;
                                     Console.WriteLine("Крок 3 завершено (IN,3). Очікування IN,4...");
+                                    if (SettingsManager.Current.Initialization.IsAutoInit)
+                                    {
+                                        button2.Enabled = false;
+                                        SendCommand("$IN,4;#IN;");
+                                    }
+                                    else
+                                    {
+                                        button3.Enabled = true;
+                                        button6.Enabled = true;
+                                    }
                                     break;
 
                                 case 4:
                                     // Ініціалізація повністю завершена
+                                    label2.BackColor = Color.GreenYellow;
+                                    label5.BackColor = Color.GreenYellow;
+                                    label7.BackColor = Color.GreenYellow;
+                                    label9.BackColor = Color.GreenYellow;
                                     Console.WriteLine("DEBUG: Виконується case 4 для IN,4");
                                     button3.Enabled = false;
                                     button6.Enabled = false;
+                                    if (SettingsManager.Current.Initialization.IsAutoInit)
+                                    {
+                                        button2.Enabled = false;
+                                    }
+                                    else
+                                    {
+                                    }
                                     panel2.Enabled = true;
                                     groupBox4.Enabled = true;
                                     Console.WriteLine($"DEBUG: panel2.Enabled = {panel2.Enabled}, groupBox4.Enabled = {groupBox4.Enabled}");
@@ -889,12 +958,22 @@ namespace TestApp
                         _dataRequestTimer?.Start();
 
                         // Enable controls in groupBox1 when connected
-
                         ButtonSettingsGet_Click(new object(), new EventArgs());
-                        groupBox1.Enabled = true;
-
+                        if (!SettingsManager.Current.Initialization.IsAutoInit)
+                        {
+                            groupBox1.Enabled = true;
+                            button9.Enabled = false;
+                        }
+                        else
+                        {
+                            groupBox1.Enabled = false;
+                            button2.Enabled = false;
+                            button3.Enabled = false;
+                            button6.Enabled = false;
+                            button9.Enabled = false;
+                        }
                         // Відправляємо запит статусу ініціалізації
-                        SendCommand("#IN");
+                        SendCommand("#IN;#ER;#AN_AZ");
                         break;
 
                     case Serial.State.Disconnected:
@@ -916,6 +995,7 @@ namespace TestApp
                         groupBox4.Enabled = false;
                         button3.Enabled = false;
                         button6.Enabled = false;
+                        button9.Enabled = true;
 
                         LoadSerialPorts();
                         break;
@@ -932,6 +1012,7 @@ namespace TestApp
                         groupBox4.Enabled = false;
                         button3.Enabled = false;
                         button6.Enabled = false;
+                        button9.Enabled = true;
 
                         LoadSerialPorts();
                         break;
@@ -1006,7 +1087,7 @@ namespace TestApp
             // Ручне керування - Ліво
             if (_isConnected)
             {
-                SendCommand("$ER,L;");
+                SendCommand("$ER,L;#ER;");
             }
         }
 
@@ -1015,7 +1096,7 @@ namespace TestApp
             // Ручне керування - Право
             if (_isConnected)
             {
-                SendCommand("$ER,R;");
+                SendCommand("$ER,R;#ER;");
             }
         }
 
@@ -1075,6 +1156,16 @@ namespace TestApp
                 numericAzScanEnd.Value = 0;
                 MessageBox.Show($"Діапазон сканування не може перетинати кут 180° (азимут {_anAzValue}°)",
                     "Помилка діапазону", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            else
+            {
+                // Зберігаємо нові координати станції після переміщення
+                SettingsManager.Update(s =>
+                {
+                    s.Scan.StartAzimuth = start;
+                    s.Scan.EndAzimuth = end;
+                    s.Station.IsSet = true;
+                });
             }
         }
 
@@ -1336,9 +1427,6 @@ namespace TestApp
         private void OnRotationStopped()
         {
             _isWaitingForStop = false;
-
-            // Clear timeout flag on confirmed stop
-            _rotationTimedOut = false;
 
             if (!_isScanning)
             {
@@ -1645,7 +1733,7 @@ namespace TestApp
                 if (float.TryParse(label12.Text, out float azimuth))
                 {
                     Console.WriteLine($"ButtonSaveAz_Click: Saving azimuth {azimuth}°");
-                    
+
                     // Оновлюємо дані в MapController
                     _mapController.StationMarker = _stationMarker;
                     _mapController.LastKnownAzimuth = azimuth;
@@ -2225,6 +2313,30 @@ namespace TestApp
             {
                 Console.WriteLine($"Error in UpdateStationPositionFromExternal: {ex.Message}");
             }
+        }
+
+        private void button10_Click(object sender, EventArgs e)
+        {
+            if (_isConnected)
+            {
+                SendCommand("$IN,2;");
+            }
+        }
+
+        private void groupBox1_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void buttonSaveInit_Click(object sender, EventArgs e)
+        {
+            SettingsManager.Update(s => s.Initialization.IsAutoInit = true);
+            buttonSaveInit.BackColor = Color.LightGreen;
+            groupBox1.Enabled = false;
+            button2.Enabled = false;
+            button3.Enabled = false;
+            button6.Enabled = false;
+            button9.Enabled = false;
         }
     }
 }

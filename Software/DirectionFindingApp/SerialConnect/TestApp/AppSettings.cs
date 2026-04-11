@@ -9,15 +9,18 @@ namespace TestApp
     {
         // Налаштування карти
         public MapSettings Map { get; set; } = new MapSettings();
-        
+
         // Налаштування станції
         public StationSettings Station { get; set; } = new StationSettings();
-        
+
         // Налаштування COM-порту
         public SerialSettings Serial { get; set; } = new SerialSettings();
-        
+
         // Налаштування сканування
         public ScanSettings Scan { get; set; } = new ScanSettings();
+
+        // Налаштування ініціалізації
+        public InitializationSettings Initialization { get; set; } = new InitializationSettings();
     }
 
     public class MapSettings
@@ -26,17 +29,17 @@ namespace TestApp
         /// Широта центру карти
         /// </summary>
         public double Latitude { get; set; } = 50.4501;
-        
+
         /// <summary>
         /// Довгота центру карти
         /// </summary>
         public double Longitude { get; set; } = 30.5234;
-        
+
         /// <summary>
         /// Рівень зуму
         /// </summary>
         public double Zoom { get; set; } = 10;
-        
+
         /// <summary>
         /// Провайдер карти (OpenStreetMap, GoogleMap, і т.д.)
         /// </summary>
@@ -49,12 +52,12 @@ namespace TestApp
         /// Широта станції
         /// </summary>
         public double Latitude { get; set; } = 50.4501;
-        
+
         /// <summary>
         /// Довгота станції
         /// </summary>
         public double Longitude { get; set; } = 30.5234;
-        
+
         /// <summary>
         /// Чи встановлені координати станції
         /// </summary>
@@ -67,11 +70,19 @@ namespace TestApp
         /// Останній використаний COM-порт
         /// </summary>
         public string? LastPort { get; set; }
-        
+
         /// <summary>
         /// Використовувати симулятор
         /// </summary>
         public bool UseSimulator { get; set; } = false;
+    }
+
+    public class InitializationSettings
+    {
+        /// <summary>
+        /// Чи автоматично виконувати ініціалізацію
+        /// </summary>
+        public bool IsAutoInit { get; set; } = false;
     }
 
     public class ScanSettings
@@ -80,27 +91,32 @@ namespace TestApp
         /// Початковий азимут для сканування
         /// </summary>
         public int StartAzimuth { get; set; } = 0;
-        
+
         /// <summary>
         /// Кінцевий азимут для сканування
         /// </summary>
-        public int EndAzimuth { get; set; } = 360;
-        
+        public int EndAzimuth { get; set; } = 359;
+
         /// <summary>
         /// Крок сканування
         /// </summary>
         public int Step { get; set; } = 10;
-        
+
+        /// <summary>
+        /// Час сканування в секундах
+        /// </summary>
+        public int ScanTime { get; set; } = 1;
+
         /// <summary>
         /// Режим маятника (прямо-назад)
         /// </summary>
         public bool PendulumMode { get; set; } = true;
-        
+
         /// <summary>
         /// Початок забороненої зони (азимут)
         /// </summary>
         public int ForbiddenZoneStart { get; set; } = 175;
-        
+
         /// <summary>
         /// Кінець забороненої зони (азимут)
         /// </summary>

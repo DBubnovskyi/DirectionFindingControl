@@ -26,3 +26,4 @@ Software/DirectionFindingApp/Electron/publish/
 Software/DirectionFindingApp/Net8Reack/BlazorRotatorServer/.vs/
 Software/DirectionFindingApp/Net8Reack/BlazorRotatorServer/bin/
 Software/DirectionFindingApp/Net8Reack/BlazorRotatorServer/obj/
+*.log

@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             button1 = new Button();
+            stopAutoInit = new Button();
             SuspendLayout();
             // 
             // button1
@@ -50,11 +51,24 @@
             button1.UseVisualStyleBackColor = false;
             button1.Click += button1_Click;
             // 
+            // stopAutoInit
+            // 
+            stopAutoInit.Font = new Font("Segoe UI", 7F);
+            stopAutoInit.Location = new Point(0, 0);
+            stopAutoInit.Margin = new Padding(1);
+            stopAutoInit.Name = "stopAutoInit";
+            stopAutoInit.Size = new Size(77, 22);
+            stopAutoInit.TabIndex = 1;
+            stopAutoInit.Text = "stop auto init";
+            stopAutoInit.UseVisualStyleBackColor = true;
+            stopAutoInit.Click += stopAutoInit_Click;
+            // 
             // Form2
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(888, 642);
+            Controls.Add(stopAutoInit);
             Controls.Add(button1);
             MinimumSize = new Size(334, 223);
             Name = "Form2";
@@ -67,5 +81,6 @@
         #endregion
 
         private Button button1;
+        private Button stopAutoInit;
     }
 }
