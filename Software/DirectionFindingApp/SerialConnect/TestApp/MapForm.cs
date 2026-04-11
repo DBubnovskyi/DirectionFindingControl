@@ -77,8 +77,10 @@ namespace TestApp
 
         private void InitializeMap()
         {
+            var selectedProvider = MapProvidersCatalog.Resolve(SettingsManager.Current.Map.MapProvider);
+
             // Налаштування GMap.NET
-            gMapControl.MapProvider = GMapProviders.OpenStreetMap;
+            gMapControl.MapProvider = selectedProvider.Provider;
             GMaps.Instance.Mode = AccessMode.ServerAndCache;
 
             // Отримуємо налаштування з Form1
@@ -223,19 +225,19 @@ namespace TestApp
 
         public void RefreshMapData()
         {
-            if (_isUpdating) 
+            if (_isUpdating)
             {
                 Console.WriteLine("MapForm.RefreshMapData: Already updating, skipping");
                 return;
             }
-            
+
             if (MarkersOverlay != null && RoutesOverlay != null && _parentForm != null)
             {
                 try
                 {
                     _isUpdating = true;
                     Console.WriteLine("MapForm.RefreshMapData: Starting refresh");
-                    
+
                     // Очищаємо старі дані
                     MarkersOverlay.Markers.Clear();
                     RoutesOverlay.Routes.Clear();
@@ -245,7 +247,7 @@ namespace TestApp
                     _parentForm.CopyMapDataToExternal(MarkersOverlay, RoutesOverlay);
 
                     Console.WriteLine($"MapForm.RefreshMapData: After copy - Routes: {RoutesOverlay.Routes.Count}, Polygons: {RoutesOverlay.Polygons.Count}");
-                    
+
                     gMapControl.Refresh();
                 }
                 finally
@@ -260,8 +262,20 @@ namespace TestApp
             RefreshMapData();
         }
 
+        public void UpdateMapProvider(string providerId)
+        {
+            var descriptor = MapProvidersCatalog.Resolve(providerId);
+            gMapControl.MapProvider = descriptor.Provider;
+            gMapControl.ReloadMap();
+            gMapControl.Refresh();
+        }
+
         private void MapForm_FormClosing(object? sender, FormClosingEventArgs e)
         {
+            _mapPreviewRenderer?.Dispose();
+            _mapPreviewRenderer = null;
+            _mapToolTip?.Dispose();
+
             if (_parentForm != null)
             {
                 // Повідомляємо Form1 що форма закривається

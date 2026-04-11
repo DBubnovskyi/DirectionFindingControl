@@ -35,6 +35,8 @@
             groupBoxMap = new GroupBox();
             buttonMap = new Button();
             buttonRed = new Button();
+            comboBoxMapProvider = new ComboBox();
+            labelMapProvider = new Label();
             panel4 = new Panel();
             label27 = new Label();
             buttonClearAz = new Button();
@@ -187,6 +189,8 @@
             // 
             groupBoxMap.Controls.Add(buttonMap);
             groupBoxMap.Controls.Add(buttonRed);
+            groupBoxMap.Controls.Add(comboBoxMapProvider);
+            groupBoxMap.Controls.Add(labelMapProvider);
             groupBoxMap.Controls.Add(panel4);
             groupBoxMap.Controls.Add(buttonClearAz);
             groupBoxMap.Controls.Add(buttonSaveAz);
@@ -226,6 +230,25 @@
             buttonRed.TextAlign = ContentAlignment.BottomCenter;
             buttonRed.UseVisualStyleBackColor = false;
             buttonRed.Click += buttonRed_Click;
+            // 
+            // comboBoxMapProvider
+            // 
+            comboBoxMapProvider.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboBoxMapProvider.FormattingEnabled = true;
+            comboBoxMapProvider.Location = new Point(6, 194);
+            comboBoxMapProvider.Name = "comboBoxMapProvider";
+            comboBoxMapProvider.Size = new Size(189, 23);
+            comboBoxMapProvider.TabIndex = 7;
+            // 
+            // labelMapProvider
+            // 
+            labelMapProvider.AutoSize = true;
+            labelMapProvider.BackColor = SystemColors.Control;
+            labelMapProvider.Location = new Point(6, 176);
+            labelMapProvider.Name = "labelMapProvider";
+            labelMapProvider.Size = new Size(100, 15);
+            labelMapProvider.TabIndex = 6;
+            labelMapProvider.Text = "Провайдер мапи";
             // 
             // panel4
             // 
@@ -1208,8 +1231,9 @@
             Controls.Add(panel3);
             MinimumSize = new Size(282, 476);
             Name = "Form1";
-            Text = "Тестування керування";
+            Text = "TestApp";
             groupBoxMap.ResumeLayout(false);
+            groupBoxMap.PerformLayout();
             panel4.ResumeLayout(false);
             panel4.PerformLayout();
             panel1.ResumeLayout(false);
@@ -1261,6 +1285,8 @@
         private Button button1;
         private GroupBox groupBoxMap;
         private GMap.NET.WindowsForms.GMapControl gMapControl1;
+        private ComboBox comboBoxMapProvider;
+        private Label labelMapProvider;
         private Panel panel1;
         private Panel panel3;
         private GroupBox groupBox4;

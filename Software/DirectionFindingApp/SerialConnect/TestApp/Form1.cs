@@ -1,10 +1,11 @@
-using SerialConnect;
-using SerialMonitor;
-using System.Collections.Concurrent;
 using GMap.NET;
 using GMap.NET.MapProviders;
 using GMap.NET.WindowsForms;
 using GMap.NET.WindowsForms.Markers;
+using SerialConnect;
+using SerialMonitor;
+using System.Collections.Concurrent;
+using System.Windows.Forms;
 
 namespace TestApp
 {
@@ -57,6 +58,7 @@ namespace TestApp
         private MapPreviewRenderer? _mapPreviewRenderer = null;
         private MapController? _mapController = null;
         private bool _isUpdatingForbiddenZone = false;
+        private bool _isInitializingMapProvider = false;
 
         public Form1()
         {
@@ -150,6 +152,7 @@ namespace TestApp
             numericAzScanEnd.Value = settings.Scan.EndAzimuth;
             numericAzScanEnd.ValueChanged += NumericAzScan_ValueChanged;
 
+            numericUpDown1.Value = settings.Initialization.Offset;
 
             radioButton1.Checked = true; // Pendulum mode by default
             radioButton1.CheckedChanged += RadioButton_CheckedChanged;
@@ -162,9 +165,27 @@ namespace TestApp
             // Connect settings buttons
             buttonSettigsGet.Click += ButtonSettingsGet_Click;
             buttonSettingsSet.Click += ButtonSettingsSet_Click;
+            InitializeMapProviderSelector();
 
             // Handle form closing
             this.FormClosing += Form1_FormClosing;
+        }
+
+        private void InitializeMapProviderSelector()
+        {
+            _isInitializingMapProvider = true;
+
+            try
+            {
+                comboBoxMapProvider.DisplayMember = nameof(MapProviderDescriptor.DisplayName);
+                comboBoxMapProvider.ValueMember = nameof(MapProviderDescriptor.Id);
+                comboBoxMapProvider.DataSource = MapProvidersCatalog.GetAll().ToList();
+                comboBoxMapProvider.SelectedIndexChanged += ComboBoxMapProvider_SelectedIndexChanged;
+            }
+            finally
+            {
+                _isInitializingMapProvider = false;
+            }
         }
 
         private void BtnAz_Click(object? sender, EventArgs e)
@@ -317,10 +338,20 @@ namespace TestApp
                 // Зберігаємо поточні налаштування карти перед закриттям
                 SaveCurrentMapSettings();
 
+                // Закриваємо зовнішню форму мапи якщо вона відкрита
+                if (_mapForm != null && !_mapForm.IsDisposed)
+                {
+                    _mapForm.Close();
+                    _mapForm.Dispose();
+                    _mapForm = null;
+                }
+
                 // Закриваємо Form2 якщо вона відкрита
                 if (_form2 != null && !_form2.IsDisposed)
                 {
                     _form2.Close();
+                    _form2.Dispose();
+                    _form2 = null;
                 }
 
                 _refreshTimer?.Stop();
@@ -362,6 +393,10 @@ namespace TestApp
                     gMapControl1?.Overlays.Remove(_markersOverlay);
                     _markersOverlay = null;
                 }
+
+                _mapPreviewRenderer?.Dispose();
+                _mapPreviewRenderer = null;
+                _mapToolTip?.Dispose();
 
                 // Dispose GMapControl
                 gMapControl1?.Dispose();
@@ -414,9 +449,10 @@ namespace TestApp
         {
             // Завантажуємо налаштування
             var settings = SettingsManager.Current;
+            var selectedProvider = MapProvidersCatalog.Resolve(settings.Map.MapProvider);
 
             // Налаштування GMap.NET
-            gMapControl1.MapProvider = GMapProviders.OpenStreetMap;
+            gMapControl1.MapProvider = selectedProvider.Provider;
             GMaps.Instance.Mode = AccessMode.ServerAndCache;
 
             // Встановлюємо центр карти з налаштувань
@@ -428,6 +464,8 @@ namespace TestApp
             // Налаштування відображення
             gMapControl1.ShowCenter = true; // Показуємо хрестик по центру
             gMapControl1.DragButton = MouseButtons.Left;
+
+            SelectMapProviderInDropdown(selectedProvider.Id);
 
             // Створення оверлеїв для маркерів та ліній
             _markersOverlay = new GMapOverlay("markers");
@@ -495,6 +533,70 @@ namespace TestApp
             }
 
             ButtonSettingsGet_Click(new object(), new EventArgs());
+        }
+
+        private void SelectMapProviderInDropdown(string providerId)
+        {
+            _isInitializingMapProvider = true;
+
+            try
+            {
+                for (int index = 0; index < comboBoxMapProvider.Items.Count; index++)
+                {
+                    if (comboBoxMapProvider.Items[index] is MapProviderDescriptor descriptor &&
+                        string.Equals(descriptor.Id, providerId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        comboBoxMapProvider.SelectedIndex = index;
+                        break;
+                    }
+                }
+            }
+            finally
+            {
+                _isInitializingMapProvider = false;
+            }
+        }
+
+        private void ComboBoxMapProvider_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            if (_isInitializingMapProvider)
+            {
+                return;
+            }
+
+            if (comboBoxMapProvider.SelectedItem is not MapProviderDescriptor descriptor)
+            {
+                return;
+            }
+
+            ApplyMapProvider(descriptor, true);
+        }
+
+        private void ApplyMapProvider(MapProviderDescriptor descriptor, bool persist)
+        {
+            try
+            {
+                gMapControl1.MapProvider = descriptor.Provider;
+                gMapControl1.ReloadMap();
+                gMapControl1.Refresh();
+
+                if (_mapForm != null && !_mapForm.IsDisposed)
+                {
+                    _mapForm.UpdateMapProvider(descriptor.Id);
+                }
+
+                if (persist)
+                {
+                    SettingsManager.Update(s =>
+                    {
+                        s.Map.MapProvider = descriptor.Id;
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Помилка при зміні провайдера карти: {ex.Message}");
+            }
         }
 
         private void RefreshTimer_Tick(object? sender, EventArgs e)
@@ -799,6 +901,10 @@ namespace TestApp
                             {
                                 case 0:
                                     // Повернення до початку - вимикаємо всі кнопки
+                                    label2.BackColor = Color.Transparent;
+                                    label5.BackColor = Color.Transparent;
+                                    label7.BackColor = Color.Transparent;
+                                    label9.BackColor = Color.Transparent;
                                     button3.Enabled = false;
                                     button6.Enabled = false;
                                     panel2.Enabled = false;
@@ -1116,6 +1222,10 @@ namespace TestApp
             {
                 int azimuth = (int)numericUpDown1.Value;
                 SendCommand($"$AN_AZ,{azimuth};$IN,3;");
+                SettingsManager.Update(s =>
+                {
+                    s.Initialization.Offset = azimuth;
+                });
             }
         }
 
@@ -1507,32 +1617,6 @@ namespace TestApp
             }
         }
 
-        private void HandleScanRangeEnd()
-        {
-            if (_scanPendulumMode)
-            {
-                // Pendulum mode: reverse direction
-                _scanDirection *= -1;
-                int temp = _scanStartAzimuth;
-                _scanStartAzimuth = _scanEndAzimuth;
-                _scanEndAzimuth = temp;
-
-                // Continue scanning from current position
-                int nextAzimuth = CalculateNextAzimuth();
-                if (nextAzimuth != -1)
-                {
-                    _currentTargetAzimuth = nextAzimuth;
-                    RotateToAzimuth(_currentTargetAzimuth);
-                }
-            }
-            else
-            {
-                // Return to start mode: go back to start position
-                _currentTargetAzimuth = _scanStartAzimuth;
-                RotateToAzimuth(_currentTargetAzimuth);
-            }
-        }
-
         private void SendCommand(string command)
         {
             // Enqueue command for paced sending to avoid bursts and ensure stable intervals
@@ -1696,7 +1780,7 @@ namespace TestApp
                     }
                 };
             }
-            _form2.Show();
+            _form2.Show(this);
         }
 
         private void label27_Click(object sender, EventArgs e)
@@ -2110,7 +2194,7 @@ namespace TestApp
 
             // Створюємо та відкриваємо нову форму з картою
             _mapForm = new MapForm(this);
-            _mapForm.Show();
+            _mapForm.Show(this);
         }
 
         /// <summary>

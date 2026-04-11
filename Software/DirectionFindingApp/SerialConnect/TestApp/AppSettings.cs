@@ -83,6 +83,11 @@ namespace TestApp
         /// Чи автоматично виконувати ініціалізацію
         /// </summary>
         public bool IsAutoInit { get; set; } = false;
+
+        /// <summary>
+        /// Азимут кута 0 для ініціалізації
+        /// </summary>
+        public int Offset { get; set; } = 0;
     }
 
     public class ScanSettings
