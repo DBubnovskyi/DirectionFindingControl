@@ -17,13 +17,23 @@ Hardware/WildDivision Refurbished/Rotator/ESP32C3 Super Mini/.pio/
 Hardware/WildDivision Refurbished/Rotator/ESP32C3 Super Mini/.vscode/
 Hardware/WildDivision Refurbished/Rotator/ESP32-S3-Zero/.pio/
 Hardware/WildDivision Refurbished/Rotator/ESP32-S3-Zero/.vscode/
+
 Software/DirectionFindingApp/SerialConnect/TestApp/publish/SerialConnect.pdb
 Software/DirectionFindingApp/SerialConnect/TestApp/publish/SerialMonitor.pdb
 Software/DirectionFindingApp/SerialConnect/TestApp/publish/TestApp.pdb
 Software/DirectionFindingApp/SerialConnect/WPF App/obj/
 Software/DirectionFindingApp/SerialConnect/WPF App/bin/
+
 Software/DirectionFindingApp/Electron/publish/
+
 Software/DirectionFindingApp/Net8Reack/BlazorRotatorServer/.vs/
 Software/DirectionFindingApp/Net8Reack/BlazorRotatorServer/bin/
 Software/DirectionFindingApp/Net8Reack/BlazorRotatorServer/obj/
+
 *.log
+Software/DirectionFindingApp/SerialConnect/SpectrozirRotatorImitator/SpectrozirRotatorImitator/obj/
+Software/DirectionFindingApp/SerialConnect/SpectrozirRotatorImitator/SpectrozirRotatorImitator/bin/Release/Newtonsoft.Json.dll
+Software/DirectionFindingApp/SerialConnect/SpectrozirRotatorImitator/SpectrozirRotatorImitator/bin/
+Software/DirectionFindingApp/SerialConnect/SpectrozirRotatorImitator/SpectrozirRotatorImitator/.vs/
+Software/DirectionFindingApp/SerialConnect/SpectrozirRotatorImitator/packages/
+Software/DirectionFindingApp/SerialConnect/SpectrozirRotatorImitator/.vs/

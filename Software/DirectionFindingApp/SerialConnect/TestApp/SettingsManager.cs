@@ -19,13 +19,13 @@ namespace TestApp
             // Зберігаємо налаштування в папці додатку
             string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string appFolder = Path.Combine(appDataPath, "DirectionFindingApp");
-            
+
             // Створюємо папку якщо не існує
             if (!Directory.Exists(appFolder))
             {
                 Directory.CreateDirectory(appFolder);
             }
-            
+
             SettingsFilePath = Path.Combine(appFolder, SettingsFileName);
         }
 
@@ -62,14 +62,14 @@ namespace TestApp
                 {
                     string json = File.ReadAllText(SettingsFilePath);
                     var settings = JsonSerializer.Deserialize<AppSettings>(json);
-                    
+
                     if (settings != null)
                     {
                         Console.WriteLine($"Налаштування завантажено з {SettingsFilePath}");
                         return settings;
                     }
                 }
-                
+
                 Console.WriteLine("Файл налаштувань не знайдено. Використовуються налаштування за замовчуванням.");
             }
             catch (Exception ex)
@@ -84,6 +84,18 @@ namespace TestApp
         }
 
         /// <summary>
+        /// Примусово перезавантажити налаштування з файлу.
+        /// </summary>
+        public static AppSettings Reload()
+        {
+            lock (_lock)
+            {
+                _currentSettings = Load();
+                return _currentSettings;
+            }
+        }
+
+        /// <summary>
         /// Зберегти налаштування у файл
         /// </summary>
         /// <param name="settings">Налаштування для збереження</param>
@@ -94,16 +106,16 @@ namespace TestApp
                 try
                 {
                     var settingsToSave = settings ?? _currentSettings ?? new AppSettings();
-                    
+
                     var options = new JsonSerializerOptions
                     {
                         WriteIndented = true, // Форматований JSON для читабельності
                         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
                     };
-                    
+
                     string json = JsonSerializer.Serialize(settingsToSave, options);
                     File.WriteAllText(SettingsFilePath, json);
-                    
+
                     _currentSettings = settingsToSave;
                     Console.WriteLine($"Налаштування збережено в {SettingsFilePath}");
                 }

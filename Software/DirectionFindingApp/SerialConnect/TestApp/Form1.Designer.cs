@@ -45,6 +45,7 @@
             gMapControl1 = new GMap.NET.WindowsForms.GMapControl();
             panel1 = new Panel();
             button9 = new Button();
+            buttonWeb = new Button();
             groupBox1 = new GroupBox();
             buttonSaveInit = new Button();
             button10 = new Button();
@@ -352,13 +353,24 @@
             button9.Name = "button9";
             button9.Size = new Size(163, 23);
             button9.TabIndex = 4;
-            button9.Text = "Оновити";
+            button9.Text = "Оновити список пристроїв";
             button9.UseVisualStyleBackColor = true;
             button9.Click += button9_Click_1;
+            // 
+            // buttonWeb
+            // 
+            buttonWeb.Location = new Point(471, 141);
+            buttonWeb.Name = "buttonWeb";
+            buttonWeb.Size = new Size(127, 23);
+            buttonWeb.TabIndex = 5;
+            buttonWeb.Text = "WEB";
+            buttonWeb.UseVisualStyleBackColor = true;
+            buttonWeb.Click += buttonWeb_Click;
             // 
             // groupBox1
             // 
             groupBox1.Controls.Add(buttonSaveInit);
+            groupBox1.Controls.Add(buttonWeb);
             groupBox1.Controls.Add(button10);
             groupBox1.Controls.Add(labelMagnetError);
             groupBox1.Controls.Add(label11);
@@ -1343,6 +1355,7 @@
         private Label label30;
         private Label label29;
         private Button button9;
+        private Button buttonWeb;
         private GroupBox groupBox9;
         private GroupBox groupBox10;
         private Label label32;

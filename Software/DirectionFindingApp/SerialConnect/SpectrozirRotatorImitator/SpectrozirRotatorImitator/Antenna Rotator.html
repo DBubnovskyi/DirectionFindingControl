@@ -1,0 +1,1078 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <title>Antenna Rotator</title>
+
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: #121212;
+            color: #e0e0e0;
+        }
+
+        .container {
+            height: calc(100vh - 80px);
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px 15px 0px 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (min-width: 640px) {
+            .container {
+                height: calc(100vh - 40px);
+                padding: 20px 20px 0 20px;
+            }
+        }
+
+        .left-column {
+            flex: 1 1 100%;
+            transition: flex 0.3s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px 0;
+        }
+
+        .right-column {
+            flex: 0 0 0%;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+
+            transition:
+                flex 0.3s ease,
+                max-height 0.3s ease,
+                opacity 0.2s ease;
+        }
+
+        .container.map-visible .left-column {
+            flex: 1 1 50%;
+        }
+
+        .container.map-visible .right-column {
+            flex: 0 0 50%;
+            max-height: 50%;
+            opacity: 1;
+        }
+
+        .rows {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        .canvasContainer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 15px auto;
+            max-height: 50%;
+            max-width: clamp(200px, 50%, 320px);
+            width: 100%;
+        }
+
+        .card {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 100%;
+            aspect-ratio: 1/1;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .cardHeader,
+        .cardFooter {
+            width: 100%;
+        }
+
+        .settingsRow {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+        }
+
+        @media (min-width: 768px) and (min-height: 1025px) {
+            .canvasContainer {
+                max-width: 320px;
+                max-height: 320px;
+            }
+
+            .card {
+                background: #1e1e1e;
+                padding: 30px;
+                border-radius: 12px;
+                max-width: 600px;
+                width: 100%;
+            }
+        }
+
+        @media (max-height: 600px) {
+            .container {
+                padding-bottom: 0;
+            }
+            .card {
+                max-width: clamp(340px, 40%, 50%);
+            }
+        }
+
+        .coordsBlock {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 500;
+
+            width: 272px;
+            background: #1e1e1e;
+            padding: 8px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .coords {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+            font-size: 16px;
+            margin-left: 6px;
+        }
+
+        .setCoords {
+            position: absolute;
+            z-index: 500;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+        }
+
+        .angLbl {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .lbl {
+            color: #e0e0e0;
+            opacity: 0.7;
+        }
+
+        .header-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            background: #323232;
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #303030;
+        }
+
+        .saveBtn {
+            background: rgba(0, 158, 225, 1);
+        }
+
+        .saveBtn:hover {
+            background: rgba(0, 140, 200, 1);
+        }
+
+        .input {
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        .inputsContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row-reverse;
+                justify-content: center;
+            }
+
+            .left-column {
+                flex: 1 1 100%;
+            }
+
+            .container.map-visible .left-column {
+                flex: 1 1 50%;
+            }
+
+            .right-column {
+                max-height: 100%;
+                max-width: 0;
+                flex: 0 0 0%;
+            }
+
+            .container.map-visible .right-column {
+                flex: 0 0 50%;
+                max-width: 50%;
+                max-height: 100%;
+                opacity: 1;
+            }
+
+        }
+
+        .tooltip {
+            position: absolute;
+            bottom: 120%;
+            right: 0;
+
+            background: #222;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+
+            white-space: nowrap;
+
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .spacer {
+            width: 100%;
+            min-height: 20px;
+            display: none;
+        }
+
+        #copiedHint {
+            position: absolute;
+            bottom: -40px;
+
+            background: #222;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+
+            display: none;
+        }
+
+        #setCoordsBtn:hover .tooltip {
+            opacity: 1;
+        }
+
+        #value {
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        #cnv {
+            display: block;
+            cursor: crosshair;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <h3>Імітатор поворотного механізму антени</h3>
+    <div class="container">
+        <div class="right-column" id="mapContainer">
+            <div id="map">
+                <div class="coordsBlock">
+                    <div class="coords">
+                        <span id="coords"></span>
+                    </div>
+                    <button class="btn" id="copyCoordsBtn" style="padding:8px; position:relative">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                        </svg>
+                        <span id="copiedHint">Copied</span>
+                    </button>
+                </div>
+                <div class="setCoords">
+                    <button class="btn" id="setCoordsBtn" style="position:relative">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-disc2-icon lucide-disc-2">
+                            <circle cx="12" cy="12" r="10" />
+                            <circle cx="12" cy="12" r="4" />
+                            <path d="M12 12h.01" />
+                        </svg>
+
+                        <span class="tooltip">Go to my location</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="left-column" id="leftColumn">
+            <div class="card">
+                <div class='cardHeader'>
+                    <div class="header-row">
+                        <div>
+                            <span class="lbl">Antenna Rotator</span>
+                        </div>
+                        <button id="btnToggleMap" class="btn">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M0 12.4575C0 11.793 0.353463 11.2396 0.819411 10.8172C1.2852 10.395 1.91942 10.0479 2.64251 9.77223C3.0066 9.63341 3.4143 9.81604 3.55312 10.1801C3.69194 10.5442 3.50933 10.9519 3.14523 11.0907C2.51786 11.33 2.05792 11.5991 1.76716 11.8627C1.47656 12.1261 1.41108 12.3283 1.41108 12.4575C1.41108 12.5851 1.4748 12.7835 1.75633 13.0424C2.03848 13.3018 2.48569 13.5679 3.09777 13.806C4.31747 14.2803 6.05043 14.5889 8 14.5889C9.94958 14.5889 11.6825 14.2803 12.9022 13.806C13.5143 13.5679 13.9615 13.3018 14.2437 13.0424C14.5252 12.7835 14.5889 12.5851 14.5889 12.4575C14.5889 12.3283 14.5234 12.1261 14.2328 11.8627C13.9421 11.5991 13.4821 11.33 12.8548 11.0907C12.4907 10.9519 12.3081 10.5442 12.4469 10.1801C12.5857 9.81603 12.9934 9.63341 13.3575 9.77223C14.0806 10.0479 14.7148 10.395 15.1806 10.8172C15.6465 11.2396 16 11.793 16 12.4575C16 13.1133 15.6555 13.6612 15.1988 14.0811C14.7427 14.5005 14.1217 14.8458 13.4137 15.1211C11.9933 15.6735 10.0791 16 8 16C5.92095 16 4.00668 15.6735 2.58631 15.1211C1.87836 14.8458 1.25732 14.5005 0.801222 14.0811C0.34452 13.6612 4.07089e-07 13.1133 0 12.4575ZM12.1574 5.56851C12.1574 3.27243 10.2961 1.41108 8 1.41108C5.70391 1.41108 3.84257 3.27243 3.84256 5.56851C3.84256 6.92608 4.58232 7.96799 5.62155 9.0504C5.87914 9.31869 6.14691 9.58148 6.4218 9.85185C6.69389 10.1195 6.973 10.3945 7.23907 10.6749C7.50289 10.953 7.76253 11.245 8 11.5548C8.23748 11.245 8.49711 10.953 8.76094 10.6749C9.027 10.3945 9.30611 10.1195 9.5782 9.85185C9.8531 9.58148 10.1209 9.31869 10.3784 9.0504C11.4177 7.96799 12.1574 6.92608 12.1574 5.56851ZM8 4.05247C8.83731 4.05247 9.51604 4.73124 9.51604 5.56851C9.51604 6.40579 8.83731 7.08455 8 7.08455C7.16269 7.08455 6.48396 6.40579 6.48396 5.56851C6.48396 4.73124 7.16269 4.05247 8 4.05247ZM13.5685 5.56851C13.5685 7.50456 12.4847 8.89413 11.3963 10.0277C11.122 10.3134 10.8389 10.5911 10.5677 10.8579C10.2936 11.1274 10.0314 11.3861 9.78453 11.6462C9.28793 12.1696 8.88842 12.6638 8.63106 13.1785C8.51155 13.4175 8.26724 13.5685 8 13.5685C7.73276 13.5685 7.48845 13.4175 7.36894 13.1785C7.11158 12.6638 6.71207 12.1696 6.21547 11.6462C5.96865 11.3861 5.70637 11.1274 5.43232 10.8579C5.16108 10.5911 4.87797 10.3134 4.60367 10.0277C3.51535 8.89413 2.43149 7.50456 2.43149 5.56851C2.43149 2.4931 4.92459 1.30915e-07 8 0C11.0754 0 13.5685 2.4931 13.5685 5.56851Z"
+                                    fill="white" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                        <button id="btnSettings" class="btn">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M7.5752 0C7.91425 -1.157e-07 8.19679 -0.00013111 8.42773 0.015625C8.65622 0.0312312 8.87237 0.0641007 9.08203 0.147461L9.10254 0.155273C9.60378 0.36291 10.0022 0.761374 10.21 1.2627L10.2197 1.28711C10.3198 1.54088 10.3476 1.8089 10.3584 2.09863C10.3671 2.33138 10.4815 2.52686 10.6514 2.63281L10.668 2.64258C10.8469 2.74589 11.0813 2.7509 11.2939 2.63867C11.5585 2.4989 11.8117 2.38651 12.0918 2.34961C12.63 2.27876 13.1748 2.42444 13.6055 2.75488C13.7909 2.89725 13.9326 3.07328 14.0645 3.26953C14.1935 3.46164 14.3344 3.70646 14.5039 4L14.5664 4.10742C14.7085 4.35377 14.8279 4.56417 14.917 4.74609C15.0209 4.95833 15.1023 5.16866 15.1328 5.40039C15.2036 5.93829 15.0577 6.48256 14.7275 6.91309C14.5554 7.13747 14.3314 7.30081 14.0781 7.45996C13.8744 7.58798 13.7607 7.7933 13.7607 8C13.7608 8.20673 13.8745 8.41209 14.0781 8.54004C14.3313 8.69908 14.5546 8.86205 14.7266 9.08594C15.057 9.51656 15.2036 10.0615 15.1328 10.5996C15.1023 10.8315 15.0201 11.0416 14.916 11.2539C14.8142 11.4618 14.6735 11.7064 14.5039 12C14.3344 12.2936 14.1936 12.5383 14.0645 12.7305C13.9325 12.9267 13.7909 13.1027 13.6055 13.2451C13.1748 13.5755 12.63 13.7213 12.0918 13.6504C11.8293 13.6158 11.5905 13.5153 11.3438 13.3877L11.2939 13.3613C11.0812 13.249 10.8468 13.2541 10.668 13.3574C10.489 13.4609 10.3674 13.6612 10.3584 13.9014C10.3472 14.2005 10.3182 14.4762 10.21 14.7373C10.0022 15.2385 9.60378 15.6371 9.10254 15.8447C8.88654 15.9342 8.6636 15.9683 8.42773 15.9844C8.1968 16.0001 7.91425 16 7.5752 16C7.23608 16 6.95363 16.0001 6.72266 15.9844C6.48678 15.9683 6.26385 15.9341 6.04785 15.8447C5.54638 15.637 5.14717 15.2377 4.93945 14.7363C4.8315 14.4754 4.8022 14.2001 4.79102 13.9014C4.78196 13.661 4.66046 13.4608 4.48145 13.3574L4.46484 13.3477C4.28807 13.2536 4.06148 13.2524 3.85547 13.3613C3.59098 13.5011 3.33777 13.6135 3.05762 13.6504C2.51964 13.7211 1.97546 13.5754 1.54492 13.2451C1.35928 13.1027 1.21787 12.9268 1.08594 12.7305C0.956807 12.5383 0.816036 12.2936 0.646484 12C0.476909 11.7063 0.335245 11.4618 0.233398 11.2539C0.129425 11.0416 0.048123 10.8313 0.0175781 10.5996L0.0146484 10.5742C-0.0484235 10.0445 0.0977411 9.51073 0.422852 9.08691C0.594853 8.86277 0.818918 8.69928 1.07227 8.54004C1.27582 8.41206 1.38863 8.20667 1.38867 8C1.38868 7.79339 1.27582 7.58804 1.07227 7.45996C0.818978 7.30082 0.594891 7.13731 0.422852 6.91309C0.0925699 6.4825 -0.0532517 5.93841 0.0175781 5.40039L0.0205078 5.37891C0.0531226 5.15564 0.132674 4.95176 0.233398 4.74609C0.335232 4.53821 0.47694 4.29365 0.646484 4C0.816012 3.70639 0.956821 3.46166 1.08594 3.26953C1.21788 3.07322 1.35934 2.89728 1.54492 2.75488C1.97545 2.42454 2.51959 2.2789 3.05762 2.34961C3.33774 2.38648 3.59094 2.49887 3.85547 2.63867C4.06806 2.75103 4.30243 2.7458 4.48145 2.64258C4.66044 2.53924 4.78195 2.33891 4.79102 2.09863C4.8022 1.79956 4.83132 1.52375 4.93945 1.2627C5.1472 0.761344 5.54646 0.36296 6.04785 0.155273C6.26386 0.0658854 6.48679 0.0317179 6.72266 0.015625C6.95363 -0.000129498 7.23609 0 7.5752 0ZM7.5752 1.11621C7.22095 1.11621 6.98296 1.11636 6.79883 1.12891C6.61974 1.14112 6.53207 1.16274 6.47461 1.18652C6.2467 1.28093 6.06611 1.46252 5.97168 1.69043C5.94191 1.76231 5.91718 1.87423 5.90723 2.13965C5.88518 2.72931 5.58037 3.29742 5.04004 3.60938C4.49971 3.92132 3.8557 3.90073 3.33398 3.625C3.11369 3.50858 3.00319 3.47161 2.92676 3.45898L2.91211 3.45605C2.66758 3.42394 2.42028 3.49049 2.22461 3.64062C2.17535 3.67843 2.1127 3.74285 2.0127 3.8916C1.90976 4.04476 1.79038 4.25088 1.61328 4.55762C1.43624 4.86425 1.31753 5.07063 1.23633 5.23633C1.16232 5.38741 1.13567 5.47332 1.12598 5.53418L1.12402 5.5459C1.09283 5.78286 1.1545 6.02311 1.29492 6.21582L1.30859 6.23438C1.35297 6.29213 1.43049 6.36328 1.625 6.48828L1.66602 6.51465C2.16562 6.82866 2.50492 7.37612 2.50488 8C2.50485 8.62387 2.16565 9.17142 1.66602 9.48535C1.44118 9.62668 1.35602 9.70391 1.30859 9.76562C1.1584 9.96134 1.09182 10.2095 1.12402 10.4541C1.13218 10.5157 1.15757 10.6019 1.23633 10.7627C1.3175 10.9284 1.43617 11.1347 1.61328 11.4414C1.79043 11.7482 1.90975 11.9542 2.0127 12.1074C2.11287 12.2565 2.17536 12.3216 2.22461 12.3594C2.42026 12.5094 2.66758 12.5761 2.91211 12.5439L2.92676 12.541C3.00319 12.5284 3.11351 12.4905 3.33398 12.374C3.85571 12.0984 4.49977 12.0788 5.04004 12.3906L5.13867 12.4521C5.61729 12.7738 5.88655 13.3075 5.90723 13.8604L5.90918 13.9082C5.9202 14.1395 5.94377 14.2422 5.97168 14.3096L5.98047 14.3311C6.07717 14.5489 6.25394 14.722 6.47461 14.8135C6.53209 14.8373 6.6198 14.8589 6.79883 14.8711C6.98297 14.8836 7.22096 14.8838 7.5752 14.8838C7.9295 14.8838 8.16742 14.8837 8.35156 14.8711C8.53064 14.8589 8.61832 14.8373 8.67578 14.8135C8.90357 14.719 9.0844 14.5373 9.17871 14.3096L9.2002 14.2461C9.22015 14.1718 9.23571 14.0585 9.24316 13.8594C9.2653 13.27 9.56952 12.7026 10.1094 12.3906C10.6498 12.0786 11.2947 12.0983 11.8164 12.374C12.0511 12.498 12.1602 12.5337 12.2373 12.5439C12.4819 12.5762 12.7301 12.5095 12.9258 12.3594C12.9751 12.3215 13.0377 12.2562 13.1377 12.1074C13.2406 11.9543 13.3601 11.7481 13.5371 11.4414C13.7142 11.1347 13.8329 10.9284 13.9141 10.7627C13.9928 10.602 14.0172 10.5156 14.0254 10.4541C14.0576 10.2094 13.992 9.96132 13.8418 9.76562C13.7944 9.70391 13.7093 9.62672 13.4844 9.48535C12.9848 9.17143 12.6446 8.62385 12.6445 8C12.6445 7.37603 12.9848 6.82854 13.4844 6.51465L13.5244 6.48926C13.7196 6.36383 13.7974 6.2922 13.8418 6.23438C13.992 6.0387 14.0576 5.79055 14.0254 5.5459C14.0173 5.48438 13.9928 5.39803 13.9141 5.2373C13.8329 5.07154 13.7143 4.86453 13.5371 4.55762C13.36 4.25082 13.2406 4.04477 13.1377 3.8916C13.0439 3.75209 12.9824 3.68724 12.9346 3.64844L12.9258 3.64062C12.7362 3.49516 12.4978 3.42887 12.2607 3.4541L12.2373 3.45605C12.1602 3.46626 12.0503 3.50087 11.8154 3.625C11.2938 3.90058 10.6506 3.92116 10.1104 3.60938C9.56993 3.29742 9.26518 2.72935 9.24316 2.13965L9.24121 2.0918C9.23019 1.86048 9.20663 1.75781 9.17871 1.69043L9.16992 1.66895C9.07336 1.45119 8.89646 1.27804 8.67578 1.18652C8.61833 1.16273 8.53062 1.14113 8.35156 1.12891C8.16743 1.11634 7.9295 1.11621 7.5752 1.11621ZM7.5752 5.20898C9.11657 5.20898 10.3662 6.4587 10.3662 8C10.3662 9.54129 9.11657 10.791 7.5752 10.791C6.03405 10.7908 4.78516 9.54113 4.78516 8C4.78516 6.45886 6.03404 5.20925 7.5752 5.20898ZM7.5752 6.3252C6.65059 6.32546 5.90137 7.07538 5.90137 8C5.90138 8.92461 6.6506 9.67454 7.5752 9.6748C8.50002 9.6748 9.24999 8.92477 9.25 8C9.25 7.07522 8.50002 6.3252 7.5752 6.3252Z"
+                                    fill="white" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="canvasContainer">
+                    <canvas id="cnv" width="320" height="320"></canvas>
+                </div>
+
+                <div class='cardFooter'>
+                    <div class="angLbl"
+                        style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <div style="flex: 1;"></div>
+                        <div style="flex: 1; display: flex; justify-content: center; gap: 10px; align-items: center;">
+                            <span id="curAngle" style="color: #FFE500;">0°</span>
+                            <span id="arrow" style="margin: 0 10px;">→</span>
+                            <span id="setAngle" style="color: #00B2FF;">0°</span>
+                        </div>
+                        <div style="flex: 1; display: flex; justify-content: flex-end; gap: 5px; align-items: center;">
+                            <span class="lbl">Azimuth:</span>
+                            <span id="azymuthAngle" style="color: #ff3c69;">0°</span>
+                        </div>
+                    </div>
+                    <input id="angleSlider" type="range" min="-110" max="110" value="0" step="1" style="width:100%;">
+                </div>
+            </div>
+
+            <div id="settingsCard" class="card" style="display:none; aspect-ratio: unset;">
+                <div class="cardHeader" style="margin-bottom:30px">
+                    <div class="header-row">
+                        <span class="lbl">Settings</span>
+                        <button class="btn" id="closeSettingsBtn">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M1.73555 0.297773C1.33852 -0.0992575 0.694803 -0.0992578 0.297773 0.297773C-0.0992577 0.694803 -0.0992575 1.33852 0.297773 1.73555L5.22412 6.66189L0.297878 11.5881C-0.0991529 11.9852 -0.0991532 12.6289 0.297877 13.0259C0.694908 13.4229 1.33862 13.4229 1.73565 13.0259L6.66189 8.09967L11.5879 13.0257C11.985 13.4227 12.6287 13.4227 13.0257 13.0257C13.4227 12.6287 13.4227 11.985 13.0257 11.5879L8.09967 6.66189L13.0258 1.73576C13.4228 1.33873 13.4228 0.695017 13.0258 0.297987C12.6288 -0.0990437 11.9851 -0.0990435 11.588 0.297987L6.66189 5.22412L1.73555 0.297773Z"
+                                    fill="#fff" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settingsRow">
+                    <div class="inputsContainer">
+                        <label class="lbl" for="azimuth">Azimuth Calibration (°):</label>
+                        <input id="azimuth" class="input" type="number" min="0" max="360" value="0">
+                    </div>
+                    <button id="saveAzimuthBtn" class="btn saveBtn">Save</button>
+                </div>
+
+                <hr style="border-color:#111; margin: 15px 0;">
+
+                <div class="settingsRow">
+                    <div class="inputsContainer">
+                        <label class="lbl">Geo-Coord. (Lat, Lng):</label>
+                        <div style="display:flex; align-items:center; gap:8px">
+                            <input id="latitude" class="input" type="number" min="-90" max="90" value="50.4501">
+                            <input id="longitude" class="input" type="number" min="-180" max="180" value="30.5234">
+                            <button id="setGeoCenterBtn" class="btn">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M7.2 11.2C7.2 11.6418 7.55816 12 8 12C8.44184 12 8.8 11.6418 8.8 11.2H7.2ZM4.97254 9.91376C5.40397 9.81848 5.67646 9.39152 5.58118 8.96008C5.48588 8.52864 5.0589 8.25616 4.62746 8.35144L4.97254 9.91376ZM11.3726 8.35144C10.9411 8.25616 10.5141 8.52864 10.4188 8.96008C10.3235 9.39152 10.596 9.81848 11.0274 9.91376L11.3726 8.35144ZM10.4 4C10.4 5.32548 9.32552 6.4 8 6.4V8C10.2091 8 12 6.20914 12 4H10.4ZM8 6.4C6.67448 6.4 5.6 5.32548 5.6 4H4C4 6.20914 5.79086 8 8 8V6.4ZM5.6 4C5.6 2.67452 6.67448 1.6 8 1.6V0C5.79086 0 4 1.79086 4 4H5.6ZM8 1.6C9.32552 1.6 10.4 2.67452 10.4 4H12C12 1.79086 10.2091 0 8 0V1.6ZM7.2 7.2V11.2H8.8V7.2H7.2ZM14.4 12C14.4 12.1815 14.3206 12.4146 14.0546 12.6941C13.7849 12.9776 13.3566 13.2693 12.7662 13.5317C11.5875 14.0555 9.90312 14.4 8 14.4V16C10.0734 16 11.9889 15.6281 13.4161 14.9938C14.1286 14.677 14.7548 14.2793 15.2137 13.797C15.6765 13.3108 16 12.7022 16 12H14.4ZM8 14.4C6.09691 14.4 4.41246 14.0555 3.23374 13.5317C2.64338 13.2693 2.21514 12.9776 1.94533 12.6941C1.67944 12.4146 1.6 12.1815 1.6 12H0C0 12.7022 0.323504 13.3108 0.786296 13.797C1.24516 14.2793 1.87134 14.677 2.58392 14.9938C4.01109 15.6281 5.92663 16 8 16V14.4ZM1.6 12C1.6 11.7459 1.76644 11.3707 2.37085 10.9461C2.96103 10.5315 3.85235 10.1612 4.97254 9.91376L4.62746 8.35144C3.3769 8.62768 2.26822 9.0628 1.45109 9.63688C0.648184 10.201 0 10.9976 0 12H1.6ZM11.0274 9.91376C12.1477 10.1612 13.039 10.5315 13.6291 10.9461C14.2336 11.3707 14.4 11.7459 14.4 12H16C16 10.9976 15.3518 10.201 14.5489 9.63688C13.7318 9.0628 12.6231 8.62768 11.3726 8.35144L11.0274 9.91376Z"
+                                        fill="white" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <button id="saveGeoCoordinatesBtn" class="btn saveBtn">Save</button>
+                </div>
+
+                <hr style="border-color:#111; margin: 15px 0;">
+
+                <div class="settingsRow">
+                    <div class="inputsContainer">
+                        <label class="lbl" for="sweep">Sweep Angle (°):</label>
+                        <input id="sweep" class="input" type="number" min="90" max="360" value="220">
+                    </div>
+                    <button id="saveSweepBtn" class="btn saveBtn">Save</button>
+                </div>
+
+                <hr style="border-color:#111; margin: 15px 0;">
+
+                <div class="settingsRow">
+                    <div class="inputsContainer">
+                        <!-- IP Address -->
+                        <label class="lbl" for="ipAddr">Device IP address:</label>
+                        <input id="ipAddr" class="input" type="text" value="192.168.1.12">
+                    </div>
+                    <button id="saveIPAdrBtn" class="btn saveBtn">Save</button>
+                </div>
+
+                <hr style="border-color:#111; margin: 15px 0;">
+
+                <!-- Calibration -->
+                <span class="lbl">Advanced (Rotation calibration):</span>
+                <br />
+                <span class="lbl">Rotate to the desired angle and press the SET button, then press SAVE</span>
+
+                <div class="settingsRow">
+                    <div
+                        style="display:grid; grid-template-columns: 40px 100px 60px; gap: 4px 8px; margin-top: 15px;  align-items: center;  ">
+
+                        <span>-180</span>
+                        <input id="cal__n180" class="input" type="number" value="0">
+                        <button class="btn" onclick="document.getElementById('cal__n180').value = curDac">Set</button>
+
+                        <span>-90</span>
+                        <input id="cal__n90" class="input" type="number" value="0">
+                        <button class="btn" onclick="document.getElementById('cal__n90').value = curDac">Set</button>
+
+                        <span>0</span>
+                        <input id="cal__0" class="input" type="number" value="0">
+                        <button class="btn" onclick="document.getElementById('cal__0').value = curDac">Set</button>
+
+                        <span>+90</span>
+                        <input id="cal__90" class="input" type="number" value="0">
+                        <button class="btn" onclick="document.getElementById('cal__90').value = curDac">Set</button>
+
+                        <span>+180</span>
+                        <input id="cal__180" class="input" type="number" value="0">
+                        <button class="btn" onclick="document.getElementById('cal__180').value = curDac">Set</button>
+
+                    </div>
+                    <button id="saveCalBtn" class="btn saveBtn">Save</button>
+                </div>
+
+            </div>
+
+            <span id="snText" class="lbl" style="text-align: center; font-size: 12px;">S/N ___</span>
+
+            <div class="spacer" id="bottomSpacer"></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("cnv");
+        const ctx = canvas.getContext("2d");
+        const setSpan = document.getElementById("setAngle");
+        const curSpan = document.getElementById("curAngle");
+        const azymuthAngleSpan = document.getElementById("azymuthAngle");
+        const slider = document.getElementById("angleSlider");
+
+        let setAngle = 0;
+        let curAngle = 0;
+        let sweepAngle = 220;
+        let azimuth = 300;
+
+        let centerLat = 50.4501;
+        let centerLng = 30.5234;
+
+        // Convert degrees to radians
+        function deg2rad(deg) {
+            return deg * Math.PI / 180;
+        }
+
+        // Draw circle with arrows
+        function draw() {
+            const w = canvas.width;
+            const h = canvas.height;
+
+            const r = Math.min(w, h) / 2 - 20;
+            const rMin = Math.min(w, h) / 12;
+
+            const cColor = "#666666"
+
+            const startSweepAngle = -(sweepAngle) / 2;
+            const stopSweepAngle = (sweepAngle) / 2;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Draw outer circle
+
+            drawArc(startSweepAngle - 90, stopSweepAngle - 90, r, cColor, 3);
+            drawArc(0, 360, r - 2, cColor, 1);
+
+
+            drawArrow(startSweepAngle, r - 1, cColor, 3, false, false);
+            drawArrow(stopSweepAngle, r - 1, cColor, 3, false, false);
+
+            drawArrow(0, r + 10, cColor, 1, false, false);
+            drawArrow(45, r + 10, cColor, 1, false, false);
+            drawArrow(90, r + 10, cColor, 1, false, false);
+            drawArrow(135, r + 10, cColor, 1, false, false);
+            drawArrow(180, r + 10, cColor, 1, false, false);
+            drawArrow(225, r + 10, cColor, 1, false, false);
+            drawArrow(270, r + 10, cColor, 1, false, false);
+            drawArrow(315, r + 10, cColor, 1, false, false);
+
+
+            // Draw set angle arrow 
+            drawArrow(setAngle, r + 15, "#00B2FF", 3, true, false);
+
+            // Draw current angle arrow
+            drawArrow(curAngle, r + 15, "#FFE500", 3, false, true);
+
+            drawArc(startSweepAngle - 90, stopSweepAngle - 90, rMin, "#FFE500", 3);
+            drawArc(0, 360, 5, "#FFE500", 6);
+
+
+        }
+
+        function drawArc(startAngle, stopAngle, radius, color, width) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            // Draw outer circle
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius - 2, deg2rad(startAngle), deg2rad(stopAngle));
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.stroke();
+        }
+
+        function drawArrow(angleDeg, radius, color, width, dashline, drawArrow) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            // Draw set angle arrow (red)
+            const sx = cx + radius * Math.cos(deg2rad(angleDeg - 90));
+            const sy = cy + radius * Math.sin(deg2rad(angleDeg - 90));
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(sx, sy);
+
+
+            if (drawArrow) {
+                // calc arrowhead points
+                var x225 = sx + 15 * Math.cos(deg2rad(angleDeg - 90 + 225));
+                var y225 = sy + 15 * Math.sin(deg2rad(angleDeg - 90 + 225));
+                var x135 = sx + 15 * Math.cos(deg2rad(angleDeg - 90 + 135));
+                var y135 = sy + 15 * Math.sin(deg2rad(angleDeg - 90 + 135));
+
+                // draw partial arrowhead at 225 degrees
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(x225, y225);
+                // draw partial arrowhead at 135 degrees
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(x135, y135);
+            }
+
+
+            if (dashline) ctx.setLineDash([width, width]);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        canvas.addEventListener("mousedown", handleCanvas);
+        canvas.addEventListener("mousemove", (e) => {
+            if (e.buttons === 1) handleCanvas(e);  // drag with left mouse
+        });
+
+        function handleCanvas(e) {
+            const box = canvas.getBoundingClientRect();
+
+            const cx = box.left + box.width / 2;
+            const cy = box.top + box.height / 2;
+
+            const dx = e.clientX - cx;
+            const dy = e.clientY - cy;
+
+            // Canvas Y-axis is inverted → flip dy
+            const angleRad = Math.atan2(-dy, dx);
+            let angleDeg = angleRad * 180 / Math.PI;
+
+            angleDeg = -angleDeg + 90;
+
+            // Normalize to -180..180
+            if (angleDeg > 180) angleDeg -= 360;
+
+            var pointerAngle = angleDeg;
+            sendAngle(pointerAngle);
+            angleSlider.value = pointerAngle;
+        }
+
+        // Toggle Settings visibility
+        const btnSettings = document.getElementById("btnSettings");
+        const settingsCard = document.getElementById("settingsCard");
+        const leftCol = document.getElementById("leftColumn");
+        const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+        const bottomSpacer = document.getElementById("bottomSpacer");
+
+        btnSettings.addEventListener("click", () => {
+            settingsCard.style.display = settingsCard.style.display === "none" ? "block" : "none";
+            leftCol.style.justifyContent = settingsCard.style.display === "none" ? "center" : "flex-start";
+            bottomSpacer.style.display = settingsCard.style.display === "none" ? "none" : "block";
+            if (map) {
+                if (settingsCard.style.display === "none") {
+                    mapCenterMarker.setLatLng(startLatLng);
+                }
+                else {
+                    mapCenterMarker.setLatLng(map.getCenter());
+                }
+            }
+        });
+
+        closeSettingsBtn.addEventListener("click", () => {
+            settingsCard.style.display = "none";
+            leftCol.style.justifyContent = "center";
+            if (map) {
+                mapCenterMarker.setLatLng(startLatLng);
+            }
+        });
+
+        // Send to ESP32 when slider moves
+        slider.addEventListener("input", () => {
+            sendAngle(parseInt(slider.value));
+        });
+
+        function sendAngle(angle) {
+            setAngle = angle;
+            setSpan.textContent = Math.round(angle) + "°";
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ command: "setAngle", value: setAngle }));
+            }
+
+            draw();
+        }
+
+        function updateMapCoordinates() {
+            const angle = Math.round(getAzimuthAngle()) + "°";
+
+            document.getElementById("coords").textContent = `${centerLat.toFixed(4)}, ${centerLng.toFixed(4)} | Az: ${angle}`;
+        }
+
+        function initWebSocket() {
+            ws = new WebSocket(`ws://${location.host}/ws`);
+            ws.onopen = () => {
+                console.log("[WS] Connected");
+            };
+
+            ws.onerror = (err) => {
+                console.log("[WS] Error:", err);
+            };
+
+            ws.onclose = (ev) => {
+                console.log("[WS] Closed:", ev.code, ev.reason);
+                // try reconnect in 1s
+                setTimeout(initWebSocket, 1000);
+            };
+
+            ws.onmessage = (msg) => {
+                try {
+                    const json = JSON.parse(msg.data);
+
+                    if ("command" in json) {
+                        const cmd = json.command;
+                        if(cmd === "angle") {
+                            if ("angle" in json) {
+                                curAngle = json.angle;
+                                setAngle = json.req_angle
+
+                                slider.value = setAngle;
+
+                                curSpan.textContent = Math.round(curAngle) + "°";
+                                azymuthAngleSpan.textContent = Math.round(getAzimuthAngle()) + "°";
+                                draw();  // redraw canvas with updated angle
+                                updateMap();
+                                updateMapCoordinates()
+                            }
+
+                            if ("dac" in json) {
+                                curDac = Math.round(json.dac);
+                            }                        
+                        }
+                        else if (cmd === "settings") {
+                            loadSettings();
+                        }
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            };
+        }
+
+        document.getElementById("saveSweepBtn").onclick = saveSweepAndAzimuth;
+        document.getElementById("saveAzimuthBtn").onclick = saveSweepAndAzimuth;
+        document.getElementById("saveIPAdrBtn").onclick = saveIPAddress;
+        document.getElementById("saveCalBtn").onclick = saveCalibration;
+        document.getElementById("setGeoCenterBtn").onclick = setGetCenter;
+        document.getElementById("saveGeoCoordinatesBtn").onclick = saveGeoCoordinates;
+
+        async function loadSettings() {
+
+            try {
+                const res = await fetch("/settings");
+
+                if (!res.ok) {
+                    console.error("Settings request failed:", res.status);
+                    return;
+                }
+
+                const cfg = await res.json();
+
+                document.getElementById("sweep").value = cfg.sweep;
+                sweepAngle = parseInt(cfg.sweep);
+                slider.min = -(sweepAngle / 2);
+                slider.max = sweepAngle / 2;
+
+                document.getElementById("azimuth").value = cfg.azimuth;
+                azimuth = parseInt(cfg.azimuth);
+
+                centerLat = cfg.lat;
+                centerLng = cfg.lng;
+                if (map) {
+                    startLatLng = L.latLng(centerLat, centerLng);
+                }
+                document.getElementById("latitude").value = centerLat;
+                document.getElementById("longitude").value = centerLng;
+
+                document.getElementById("ipAddr").value = cfg.ip;
+
+                document.getElementById("cal__n180").value = cfg.c_n_180;
+                document.getElementById("cal__n90").value = cfg.c_n_90;
+                document.getElementById("cal__0").value = cfg.c_0;
+                document.getElementById("cal__90").value = cfg.c_90;
+                document.getElementById("cal__180").value = cfg.c_180;
+
+                document.getElementById("snText").textContent = "S/N " + cfg.sn + " / " + cfg.version;
+
+                draw();
+                updateMap();
+                updateMapCoordinates();
+
+            } catch (e) {
+                console.error("Error loading settings:", e);
+            }
+        }
+
+        async function saveSweepAndAzimuth() {
+            const payload = {
+                sweep: parseInt(document.getElementById("sweep").value),
+                azimuth: parseInt(document.getElementById("azimuth").value)
+            };
+
+            const res = await fetch("/settings/angle", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                loadSettings();
+            }
+            else alert("Error saving sweep/azimuth");
+        }
+
+        async function saveIPAddress() {
+            const payload = {
+                ip: document.getElementById("ipAddr").value.trim()
+            };
+
+            const res = await fetch("/settings/ip", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                loadSettings();
+            }
+            else alert("Error saving IP");
+        }
+
+        async function saveCalibration() {
+            const payload = {
+                c_n_180: parseInt(document.getElementById("cal__n180").value),
+                c_n_90: parseInt(document.getElementById("cal__n90").value),
+                c_0: parseInt(document.getElementById("cal__0").value),
+                c_90: parseInt(document.getElementById("cal__90").value),
+                c_180: parseInt(document.getElementById("cal__180").value)
+            };
+
+            const res = await fetch("/settings/cal", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                loadSettings();
+            }
+            else alert("Error saving calibration");
+        }
+
+        async function saveGeoCoordinates() {
+            const payload = {
+                lat: parseFloat(document.getElementById("latitude").value),
+                lng: parseFloat(document.getElementById("longitude").value),
+            };
+
+            if (Number.isNaN(payload.lat) || Number.isNaN(payload.lng)) {
+                alert("Invalid coordinates");
+                return;
+            }
+
+            const res = await fetch("/settings/geo", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                loadSettings();
+            }
+            else alert("Error saving geo coordinates");
+        }
+
+
+
+        async function setGetCenter() {
+            if (map) {
+                let centerOfMap = map.getCenter();
+                document.getElementById("latitude").value = centerOfMap.lat;
+                document.getElementById("longitude").value = centerOfMap.lng;
+            }
+        }
+
+
+
+        //Load map 
+        function loadCss(href) {
+            return new Promise((resolve, reject) => {
+                const link = document.createElement("link");
+                link.rel = "stylesheet";
+                link.href = href;
+                link.onload = resolve;
+                link.onerror = reject;
+                document.head.appendChild(link);
+            });
+        }
+
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement("script");
+                script.src = src;
+                script.defer = true;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.body.appendChild(script);
+            });
+        }
+
+        async function loadLeafletSafely() {
+            try {
+
+                if (window.L) return;
+
+                await loadCss("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css");
+                await loadScript("https://unpkg.com/leaflet@1.9.4/dist/leaflet.js");
+                await loadScript("https://cdnjs.cloudflare.com/ajax/libs/leaflet.polylinedecorator/1.7.0/leaflet.polylineDecorator.min.js");
+
+                console.log("Leaflet loaded");
+                initMap();   // your map init function
+
+            } catch (e) {
+                console.warn("Leaflet unavailable (offline)");
+                // Map will stay disabled, UI still works
+            }
+        }
+
+
+
+        // Start point (latitude, longitude)
+        let startLatLng;
+
+        let map;
+        let mapCenterMarker;
+        let line;
+        let decorator;
+        let mapVisible = false;
+
+        function getAzimuthAngle() {
+            if (curAngle < 0) {
+                return (360 + curAngle + azimuth) % 360;
+            }
+            return (curAngle + azimuth) % 360;
+        }
+
+        // Function to calculate end point based on distance and angle
+        function destinationPoint(latlng, distanceMeters, angleDeg) {
+            const R = 6378137; // Earth radius in meters
+            const δ = distanceMeters / R; // angular distance in radians
+            const θ = angleDeg * Math.PI / 180;
+
+            const φ1 = latlng.lat * Math.PI / 180;
+            const λ1 = latlng.lng * Math.PI / 180;
+
+            const φ2 = Math.asin(Math.sin(φ1) * Math.cos(δ) + Math.cos(φ1) * Math.sin(δ) * Math.cos(θ));
+            const λ2 = λ1 + Math.atan2(Math.sin(θ) * Math.sin(δ) * Math.cos(φ1), Math.cos(δ) - Math.sin(φ1) * Math.sin(φ2));
+
+            return L.latLng(φ2 * 180 / Math.PI, λ2 * 180 / Math.PI);
+        }
+
+        document.getElementById("btnToggleMap").addEventListener("click", async () => {
+            mapVisible = !mapVisible;
+
+
+            if (mapVisible && !map) {
+
+                await loadLeafletSafely();
+
+                if (window.L) {
+                    startLatLng = L.latLng(centerLat, centerLng);
+
+                    map = L.map('map').setView(startLatLng, 13);
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors'
+                    }).addTo(map);
+
+                    // create the line only once
+                    const endLatLng = destinationPoint(startLatLng, 30000, getAzimuthAngle());
+                    line = L.polyline([startLatLng, endLatLng], { color: 'red', weight: 3 }).addTo(map);
+
+
+                    mapCenterMarker = L.circleMarker(map.getCenter(), {
+                        radius: 12,
+                        color: 'red',
+                        opacity: 1
+                    }).addTo(map);
+
+                    map.on('move', () => {
+                        if (settingsCard.style.display === "none") {
+                            mapCenterMarker.setLatLng(startLatLng);
+                        }
+                        else {
+                            mapCenterMarker.setLatLng(map.getCenter());
+                        }
+                    });
+                }
+                else {
+                    mapVisible = false;
+                    alert("Unable to load map. Check your internet connection.");
+                }
+            }
+
+            //NEW LOGIC TO CONTROL ALL LAYOUT AND MAKE ANIMATION SMOOTHER
+            const container = document.querySelector('.container');
+            container.classList.toggle('map-visible', mapVisible);
+
+            if (mapVisible && map) {
+                updateMapCoordinates();
+                setTimeout(() => map.invalidateSize(), 300);
+            }
+        });
+
+        document.getElementById("copyCoordsBtn").addEventListener("click", () => {
+
+            const textToCopy = document.getElementById('coords').textContent;
+
+            const textarea = document.createElement("textarea");
+            textarea.value = textToCopy;
+            textarea.style.position = "fixed"; 
+            textarea.style.opacity = "0";
+
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+
+            try {
+                document.execCommand("copy");
+                document.getElementById("copiedHint").style.display = "block";
+                setTimeout(() => {
+                    document.getElementById("copiedHint").style.display = "none";
+                }, 2000);
+            } catch (err) {
+                alert("Copy failed");
+            }
+
+            document.body.removeChild(textarea);
+        });
+
+        document.getElementById('setCoordsBtn').addEventListener('click', () => {
+            if (!map) return;
+            startLatLng = L.latLng(centerLat, centerLng);
+            map.setView(startLatLng, 13);
+        })
+
+        function updateMap() {
+            if (mapVisible && map && line) {
+                const length = 30000;
+                const newEnd = destinationPoint(startLatLng, length, getAzimuthAngle());
+
+                line.setLatLngs([startLatLng, newEnd]);
+            }
+        }
+
+        initWebSocket();
+        loadSettings();
+        draw();
+    </script>
+</body>
+</html>

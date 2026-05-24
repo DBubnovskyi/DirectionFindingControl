@@ -21,6 +21,23 @@ namespace TestApp
 
         // Налаштування ініціалізації
         public InitializationSettings Initialization { get; set; } = new InitializationSettings();
+
+        // Налаштування вбудованого Web/WS сервера
+        public WebServerSettings Web { get; set; } = new WebServerSettings();
+    }
+
+    public class WebServerSettings
+    {
+        public string IP { get; set; } = "10.129.31.19";
+        public int Port { get; set; } = 80;
+        public string SerialNumber { get; set; } = "SZR-F0F0F0F0F0F0";
+        public string Version { get; set; } = "ROTATOR-SZ-1M; HW:1.0; FW:1.11";
+        public int Reverse { get; set; } = 1;
+        public int CalibrationNeg180 { get; set; } = 4150;
+        public int CalibrationNeg90 { get; set; } = 3135;
+        public int Calibration0 { get; set; } = 2107;
+        public int Calibration90 { get; set; } = 1066;
+        public int Calibration180 { get; set; } = 0;
     }
 
     public class MapSettings

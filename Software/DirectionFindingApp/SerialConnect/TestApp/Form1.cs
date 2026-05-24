@@ -5,6 +5,10 @@ using GMap.NET.WindowsForms.Markers;
 using SerialConnect;
 using SerialMonitor;
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
+using System.Text.Json;
 using System.Windows.Forms;
 
 namespace TestApp
@@ -59,6 +63,13 @@ namespace TestApp
         private MapController? _mapController = null;
         private bool _isUpdatingForbiddenZone = false;
         private bool _isInitializingMapProvider = false;
+        private RotatorWebServer? _webServer;
+        private Process? _webConsoleProcess;
+        private readonly object _webLogSync = new object();
+        private readonly string _webLogPath = Path.Combine(AppContext.BaseDirectory, "webserver.log");
+        private int _currentInitializationStep;
+        private bool _isShuttingDownWeb;
+        private bool _isExitingProcess;
 
         public Form1()
         {
@@ -72,6 +83,163 @@ namespace TestApp
             InitializeRotationTimeoutTimer();
             InitializeSendQueueTimer();
             InitializeMap();
+            InitializeWebServer();
+        }
+
+        private void InitializeWebServer()
+        {
+            _webServer = new RotatorWebServer(
+                BuildWebSnapshot,
+                ApplySweepFromWeb,
+                ApplyCalibrationFromWeb,
+                ApplyGeoFromWeb,
+                HandleWebSerialCommand,
+                LogWebMessage);
+        }
+
+        private void HandleWebSerialCommand(string command)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(() => HandleWebSerialCommand(command));
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(command))
+            {
+                return;
+            }
+
+            // Route AZ from web through the same UI path as map right-click (dead-zone aware).
+            foreach (string part in command.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            {
+                string trimmed = part.Trim();
+                if (trimmed.StartsWith("$AZ,", StringComparison.OrdinalIgnoreCase))
+                {
+                    string valuePart = trimmed.Substring(4).Trim();
+                    if (int.TryParse(valuePart, out int requestedAzimuth))
+                    {
+                        int normalized = ((requestedAzimuth % 360) + 360) % 360;
+                        numericUpDownAz.Value = normalized;
+                        BtnAz_Click(this, EventArgs.Empty);
+                    }
+                    continue;
+                }
+
+                SendCommand(trimmed.EndsWith(";", StringComparison.Ordinal) ? trimmed : trimmed + ";");
+            }
+        }
+
+        private WebSnapshot BuildWebSnapshot()
+        {
+            var settings = SettingsManager.Current;
+            int forbiddenStart = (int)numFobStart.Value;
+            int forbiddenEnd = (int)numFobEnd.Value;
+            int forbiddenWidth = (forbiddenEnd - forbiddenStart + 360) % 360;
+            int sweep = forbiddenWidth == 0 ? 360 : 360 - forbiddenWidth;
+            sweep = Math.Clamp(sweep, 90, 360);
+
+            var stationLat = settings.Station.IsSet ? settings.Station.Latitude : settings.Map.Latitude;
+            var stationLng = settings.Station.IsSet ? settings.Station.Longitude : settings.Map.Longitude;
+
+            return new WebSnapshot
+            {
+                Sweep = sweep,
+                MaxSweep = sweep,
+                Azimuth = settings.Initialization.Offset,
+                Latitude = stationLat,
+                Longitude = stationLng,
+                IP = settings.Web.IP,
+                Port = settings.Web.Port,
+                SerialNumber = settings.Web.SerialNumber,
+                Version = settings.Web.Version,
+                Reverse = settings.Web.Reverse,
+                CalibrationNeg180 = settings.Web.CalibrationNeg180,
+                CalibrationNeg90 = settings.Web.CalibrationNeg90,
+                Calibration0 = settings.Web.Calibration0,
+                Calibration90 = settings.Web.Calibration90,
+                Calibration180 = settings.Web.Calibration180
+            };
+        }
+
+        private void ApplySweepFromWeb(int sweep)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(() => ApplySweepFromWeb(sweep));
+                return;
+            }
+
+            int forbiddenWidth = Math.Clamp(360 - sweep, 0, 270);
+            int startAngle = (180 - forbiddenWidth / 2 + 360) % 360;
+            int endAngle = (180 + forbiddenWidth / 2 + 360) % 360;
+
+            _isUpdatingForbiddenZone = true;
+            try
+            {
+                numFobStart.Value = startAngle;
+                numFobEnd.Value = endAngle;
+
+                int startAz = (startAngle + _anAzValue - 180 + 360) % 360;
+                int endAz = (endAngle + _anAzValue - 180 + 360) % 360;
+                azUpDown3.Value = startAz;
+                azUpDown2.Value = endAz;
+
+                SettingsManager.Update(s =>
+                {
+                    s.Scan.ForbiddenZoneStart = startAngle;
+                    s.Scan.ForbiddenZoneEnd = endAngle;
+                });
+            }
+            finally
+            {
+                _isUpdatingForbiddenZone = false;
+            }
+
+            UpdateAzimuthLine();
+        }
+
+        private void ApplyCalibrationFromWeb(int azimuth)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(() => ApplyCalibrationFromWeb(azimuth));
+                return;
+            }
+
+            int normalizedAzimuth = Math.Clamp(azimuth, 0, 359);
+            numericUpDown1.Value = normalizedAzimuth;
+
+            // API compatibility with Spectrozir: azimuth from /settings/angle must always persist.
+            if (SettingsManager.Current.Initialization.Offset != normalizedAzimuth)
+            {
+                SettingsManager.Update(s =>
+                {
+                    s.Initialization.Offset = normalizedAzimuth;
+                });
+            }
+
+            if (_currentInitializationStep != 3 || !_isConnected)
+            {
+                _webServer?.NotifySettingsChanged();
+                return;
+            }
+
+            button7_Click(this, EventArgs.Empty);
+            button8_Click(this, EventArgs.Empty);
+            _webServer?.NotifySettingsChanged();
+        }
+
+        private void ApplyGeoFromWeb(double latitude, double longitude)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(() => ApplyGeoFromWeb(latitude, longitude));
+                return;
+            }
+
+            gMapControl1.Position = new PointLatLng(latitude, longitude);
+            buttonSetCoords_Click(this, EventArgs.Empty);
         }
 
         private void InitializeUI()
@@ -169,6 +337,7 @@ namespace TestApp
 
             // Handle form closing
             this.FormClosing += Form1_FormClosing;
+            this.FormClosed += Form1_FormClosed;
         }
 
         private void InitializeMapProviderSelector()
@@ -364,6 +533,7 @@ namespace TestApp
                 _sendQueueTimer?.Dispose();
                 _rotationTimeoutTimer?.Stop();
                 _rotationTimeoutTimer?.Dispose();
+                ShutdownWebSubsystem(force: true);
 
                 // clear pending queued commands
                 while (_sendQueue.TryDequeue(out _)) { }
@@ -406,6 +576,26 @@ namespace TestApp
                 // Ignore errors during cleanup
                 Console.WriteLine($"Error during cleanup: {ex.Message}");
             }
+        }
+
+        private void Form1_FormClosed(object? sender, FormClosedEventArgs e)
+        {
+            if (_isExitingProcess)
+            {
+                return;
+            }
+
+            _isExitingProcess = true;
+
+            try
+            {
+                Application.ExitThread();
+            }
+            catch
+            {
+            }
+
+            Environment.Exit(0);
         }
 
         private void InitializeSerial()
@@ -677,6 +867,8 @@ namespace TestApp
                     try
                     {
                         _serial.Command = cmd;
+                        _webServer?.NotifySerialTx(cmd);
+                        LogWebMessage($"[SERIAL][TX] {cmd}");
                     }
                     catch (Exception ex)
                     {
@@ -772,6 +964,8 @@ namespace TestApp
                 string logMessage = $"[{timestamp}] RX: {message}\n";
                 richTextBox1.AppendText(logMessage);
                 richTextBox1.ScrollToCaret();
+                _webServer?.NotifySerialRx(message);
+                LogWebMessage($"[SERIAL][RX] {message}");
 
                 // Update last-received time and clear any data-request backoff state
                 _lastRxTime = DateTime.Now;
@@ -895,6 +1089,7 @@ namespace TestApp
 
                         if (int.TryParse(inStr, out int inValue))
                         {
+                            _currentInitializationStep = inValue;
                             Console.WriteLine($"DEBUG: Parsed IN value = {inValue}");
 
                             switch (inValue)
@@ -1685,6 +1880,7 @@ namespace TestApp
 
             // Оновлюємо зовнішню карту якщо вона відкрита
             _mapForm?.UpdateMapData();
+            _webServer?.NotifySettingsChanged();
         }
 
         private void Label12_TextChanged(object? sender, EventArgs e)
@@ -2273,6 +2469,7 @@ namespace TestApp
 
                 // Оновлюємо зовнішню карту
                 _mapForm?.UpdateMapData();
+                _webServer?.NotifySettingsChanged();
             }
         }
 
@@ -2391,6 +2588,7 @@ namespace TestApp
 
                     // Оновлюємо лінію азимуту
                     UpdateAzimuthLine();
+                    _webServer?.NotifySettingsChanged();
                 }
             }
             catch (Exception ex)
@@ -2410,6 +2608,333 @@ namespace TestApp
         private void groupBox1_Enter(object sender, EventArgs e)
         {
 
+        }
+
+        private void buttonWeb_Click(object sender, EventArgs e)
+        {
+            if (_webServer == null)
+            {
+                return;
+            }
+
+            if (!_webServer.IsRunning)
+            {
+                var settings = SettingsManager.Reload();
+                settings = ApplyWebHostOverridesFromLocalConfig(settings);
+                var snapshot = BuildWebSnapshot();
+                string configPath = SaveWebConfig(snapshot);
+                string httpUrl = $"http://{snapshot.IP}:{settings.Web.Port}/";
+                string wsUrl = $"ws://{snapshot.IP}:{settings.Web.Port}/ws";
+
+                PrepareWebLog(httpUrl, wsUrl, configPath);
+                _webServer.Start(settings.Web.IP, settings.Web.Port);
+
+                StartWebConsoleWindow(httpUrl, wsUrl, configPath);
+                SetWebButtonRunning();
+                _webServer.NotifySettingsChanged();
+
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = httpUrl,
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Не вдалося відкрити браузер: {ex.Message}");
+                }
+            }
+            else
+            {
+                LogWebMessage("[WEB] Stopping web server...");
+                ShutdownWebSubsystem();
+            }
+        }
+
+        private AppSettings ApplyWebHostOverridesFromLocalConfig(AppSettings settings)
+        {
+            string configPath = Path.Combine(AppContext.BaseDirectory, "web-settings.json");
+            if (!File.Exists(configPath))
+            {
+                return settings;
+            }
+
+            try
+            {
+                using JsonDocument document = JsonDocument.Parse(File.ReadAllText(configPath));
+                JsonElement root = document.RootElement;
+
+                string ip = settings.Web.IP;
+                int port = settings.Web.Port;
+
+                bool hasIp = root.TryGetProperty("ip", out JsonElement ipElement) &&
+                             ipElement.ValueKind == JsonValueKind.String &&
+                             !string.IsNullOrWhiteSpace(ipElement.GetString());
+                if (hasIp)
+                {
+                    ip = ipElement.GetString()!.Trim();
+                }
+
+                int parsedPort = 0;
+                bool hasPort = root.TryGetProperty("port", out JsonElement portElement) &&
+                               portElement.ValueKind == JsonValueKind.Number &&
+                               portElement.TryGetInt32(out parsedPort) &&
+                               parsedPort is >= 1 and <= 65535;
+                if (hasPort)
+                {
+                    port = parsedPort;
+                }
+
+                if (ip == settings.Web.IP && port == settings.Web.Port)
+                {
+                    return settings;
+                }
+
+                SettingsManager.Update(s =>
+                {
+                    s.Web.IP = ip;
+                    s.Web.Port = port;
+                });
+
+                return SettingsManager.Reload();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Не вдалося прочитати web-settings.json: {ex.Message}");
+                return settings;
+            }
+        }
+
+        private void SetWebButtonRunning()
+        {
+            buttonWeb.Text = "WEB: ON";
+            buttonWeb.BackColor = Color.LightGreen;
+        }
+
+        private void SetWebButtonStopped()
+        {
+            buttonWeb.Text = "WEB";
+            buttonWeb.UseVisualStyleBackColor = true;
+        }
+
+        private void ShutdownWebSubsystem(bool keepButtonState = false, bool force = false)
+        {
+            if (_isShuttingDownWeb && !force)
+            {
+                return;
+            }
+
+            _isShuttingDownWeb = true;
+            try
+            {
+                _webServer?.Stop();
+                StopWebConsoleWindow();
+                if (!keepButtonState)
+                {
+                    SetWebButtonStopped();
+                }
+            }
+            finally
+            {
+                _isShuttingDownWeb = false;
+            }
+        }
+
+        private void PrepareWebLog(string httpUrl, string wsUrl, string configPath)
+        {
+            lock (_webLogSync)
+            {
+                string reachableUrls = string.Join(Environment.NewLine,
+                    GetReachableWebUrls()
+                        .Select(url => $"[{DateTime.Now:HH:mm:ss.fff}] [WEB] LAN:  {url}"));
+
+                Directory.CreateDirectory(Path.GetDirectoryName(_webLogPath) ?? AppContext.BaseDirectory);
+                File.WriteAllText(_webLogPath,
+                    $"[{DateTime.Now:HH:mm:ss.fff}] [WEB] Starting server\n" +
+                    $"[{DateTime.Now:HH:mm:ss.fff}] [WEB] HTTP: {httpUrl}\n" +
+                    $"[{DateTime.Now:HH:mm:ss.fff}] [WEB] WS:   {wsUrl}\n" +
+                    $"[{DateTime.Now:HH:mm:ss.fff}] [WEB] CONFIG: {configPath}\n" +
+                    (string.IsNullOrWhiteSpace(reachableUrls) ? "\n" : reachableUrls + "\n\n"));
+            }
+        }
+
+        private IEnumerable<string> GetReachableWebUrls()
+        {
+            int port = SettingsManager.Current.Web.Port;
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (IPAddress address in Dns.GetHostAddresses(Dns.GetHostName()))
+            {
+                if (address.AddressFamily != AddressFamily.InterNetwork || IPAddress.IsLoopback(address))
+                {
+                    continue;
+                }
+
+                string ip = address.ToString();
+                if (ip.StartsWith("169.254.", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                string url = $"http://{ip}:{port}/";
+                if (seen.Add(url))
+                {
+                    yield return url;
+                }
+            }
+        }
+
+        private void LogWebMessage(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            lock (_webLogSync)
+            {
+                string line = $"[{DateTime.Now:HH:mm:ss.fff}] {message}{Environment.NewLine}";
+                File.AppendAllText(_webLogPath, line);
+            }
+        }
+
+        private string SaveWebConfig(WebSnapshot snapshot)
+        {
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
+
+            string json = JsonSerializer.Serialize(snapshot, options);
+            string configPath = Path.Combine(AppContext.BaseDirectory, "web-settings.json");
+            File.WriteAllText(configPath, json);
+            return configPath;
+        }
+
+        private void StartWebConsoleWindow(string httpUrl, string wsUrl, string configPath)
+        {
+            StopWebConsoleWindow();
+
+            string escapedLogPath = _webLogPath.Replace("'", "''");
+            string escapedHttp = httpUrl.Replace("'", "''");
+            string escapedWs = wsUrl.Replace("'", "''");
+            string escapedConfig = configPath.Replace("'", "''");
+            string psCommand =
+                "$Host.UI.RawUI.WindowTitle='TestApp Web Server'; " +
+                $"Write-Host 'HTTP: {escapedHttp}'; " +
+                $"Write-Host 'WS: {escapedWs}'; " +
+                $"Write-Host 'CONFIG: {escapedConfig}'; " +
+                "Write-Host ''; " +
+                "Write-Host 'Read-only live log. Close window safely at any time.'; " +
+                $"Get-Content -Path '{escapedLogPath}' -Tail 200 -Wait";
+
+            _webConsoleProcess = Process.Start(new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-NoLogo -NoExit -Command \"{psCommand}\"",
+                UseShellExecute = true,
+                CreateNoWindow = false
+            });
+
+            if (_webConsoleProcess != null)
+            {
+                _webConsoleProcess.EnableRaisingEvents = true;
+                _webConsoleProcess.Exited += WebConsoleProcess_Exited;
+            }
+        }
+
+        private void WebConsoleProcess_Exited(object? sender, EventArgs e)
+        {
+            if (_isShuttingDownWeb)
+            {
+                return;
+            }
+
+            try
+            {
+                if (IsDisposed || Disposing)
+                {
+                    return;
+                }
+
+                // Console exit can arrive from a non-UI thread; stop server in background to avoid UI hangs.
+                _ = Task.Run(() =>
+                {
+                    try
+                    {
+                        _webServer?.Stop();
+                    }
+                    catch
+                    {
+                    }
+                });
+
+                BeginInvoke(new Action(() =>
+                {
+                    if (_isShuttingDownWeb || IsDisposed || Disposing)
+                    {
+                        return;
+                    }
+
+                    LogWebMessage("[WEB] Console window closed. Web server stopped.");
+                    _webConsoleProcess?.Dispose();
+                    _webConsoleProcess = null;
+                    SetWebButtonStopped();
+                }));
+            }
+            catch
+            {
+            }
+        }
+
+        private void StopWebConsoleWindow()
+        {
+            Process? process = _webConsoleProcess;
+            _webConsoleProcess = null;
+
+            try
+            {
+                if (process != null)
+                {
+                    process.Exited -= WebConsoleProcess_Exited;
+                }
+
+                if (process != null && !process.HasExited)
+                {
+                    try
+                    {
+                        process.CloseMainWindow();
+                    }
+                    catch
+                    {
+                    }
+
+                    try
+                    {
+                        process.Kill();
+                    }
+                    catch
+                    {
+                    }
+
+                    try
+                    {
+                        process.WaitForExit(3000);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+            catch
+            {
+            }
+            finally
+            {
+                process?.Dispose();
+            }
         }
 
         private void buttonSaveInit_Click(object sender, EventArgs e)

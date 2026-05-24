@@ -1,0 +1,17 @@
+{
+  "Port": 80,
+  "IP": "127.0.0.1",
+  "Sweep": 360,
+  "MaxSweep": 360,
+  "Azimuth": 0,
+  "Latitude": 0.0,
+  "Longitude": 0.0,
+  "SerialNumber": "",
+  "Version": "1.0.0",
+  "Reverse": false,
+  "CalibrationNeg180": 0,
+  "CalibrationNeg90": 0,
+  "Calibration0": 0,
+  "Calibration90": 0,
+  "Calibration180": 0
+}

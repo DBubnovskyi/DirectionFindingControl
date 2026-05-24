@@ -1,0 +1,1400 @@
+
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <title>Інженерний Пульт Антени</title>
+
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-base: #0a1624;
+            --bg-mid: #12263a;
+            --grid-fine: rgba(138, 179, 204, 0.12);
+            --grid-bold: rgba(102, 171, 214, 0.2);
+            --panel: rgba(10, 28, 44, 0.9);
+            --panel-border: #2f536f;
+            --text-main: #d7eaf6;
+            --text-soft: #9dbacf;
+            --accent: #39c0ed;
+            --accent-2: #8be9fd;
+            --ok: #43d9ad;
+            --warn: #ffd166;
+            --danger: #ff6b6b;
+        }
+
+        body {
+            font-family: "Segoe UI", "Consolas", sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                linear-gradient(var(--grid-fine) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-fine) 1px, transparent 1px),
+                linear-gradient(var(--grid-bold) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-bold) 1px, transparent 1px),
+                radial-gradient(circle at 10% 20%, #1e4060 0%, var(--bg-base) 55%),
+                linear-gradient(135deg, var(--bg-mid), var(--bg-base));
+            background-size: 12px 12px, 12px 12px, 60px 60px, 60px 60px, 100% 100%, 100% 100%;
+            background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
+            color: var(--text-main);
+        }
+
+        .container {
+            height: calc(100vh - 80px);
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px 15px 0px 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (min-width: 640px) {
+            .container {
+                height: calc(100vh - 40px);
+                padding: 20px 20px 0 20px;
+            }
+        }
+
+        .left-column {
+            flex: 1 1 100%;
+            transition: flex 0.3s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px 0;
+        }
+
+        .right-column {
+            flex: 0 0 0%;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+
+            transition:
+                flex 0.3s ease,
+                max-height 0.3s ease,
+                opacity 0.2s ease;
+        }
+
+        .container.map-visible .left-column {
+            flex: 1 1 50%;
+        }
+
+        .container.map-visible .right-column {
+            flex: 0 0 50%;
+            max-height: 50%;
+            opacity: 1;
+        }
+
+        .rows {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        .canvasContainer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 15px auto;
+            max-height: 50%;
+            max-width: clamp(200px, 50%, 320px);
+            width: 100%;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 12px 32px rgba(0, 10, 18, 0.45), inset 0 0 0 1px rgba(168, 214, 238, 0.06);
+            padding: 15px;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 100%;
+            aspect-ratio: 1/1;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .cardHeader,
+        .cardFooter {
+            width: 100%;
+        }
+
+        .settingsRow {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+        }
+
+        @media (min-width: 768px) and (min-height: 1025px) {
+            .canvasContainer {
+                max-width: 320px;
+                max-height: 320px;
+            }
+
+            .card {
+                background: var(--panel);
+                padding: 30px;
+                border-radius: 12px;
+                max-width: 600px;
+                width: 100%;
+            }
+        }
+
+        @media (max-height: 600px) {
+            .container {
+                padding-bottom: 0;
+            }
+            .card {
+                max-width: clamp(340px, 40%, 50%);
+            }
+        }
+
+        .coordsBlock {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 500;
+
+            width: 272px;
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
+            padding: 8px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .coords {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+            font-size: 16px;
+            margin-left: 6px;
+        }
+
+        .setCoords {
+            position: absolute;
+            z-index: 500;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+        }
+
+        .angLbl {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .lbl {
+            color: var(--text-soft);
+            opacity: 0.92;
+            letter-spacing: 0.02em;
+        }
+
+        .header-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            background: #16344d;
+            color: #e6f5ff;
+            border: 1px solid #3f6684;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .btn svg {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            flex: 0 0 auto;
+            color: #fff;
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .btn:hover {
+            background: #1f4b6c;
+            border-color: #6aa6cc;
+            transform: translateY(-1px);
+        }
+
+        .saveBtn {
+            background: #145f73;
+            border-color: #36a5be;
+        }
+
+        .saveBtn:hover {
+            background: #1c7f99;
+        }
+
+        .input {
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #43647f;
+            background: #0f2437;
+            color: #d9efff;
+        }
+
+        .inputsContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row-reverse;
+                justify-content: center;
+            }
+
+            .left-column {
+                flex: 1 1 100%;
+            }
+
+            .container.map-visible .left-column {
+                flex: 1 1 50%;
+            }
+
+            .right-column {
+                max-height: 100%;
+                max-width: 0;
+                flex: 0 0 0%;
+            }
+
+            .container.map-visible .right-column {
+                flex: 0 0 50%;
+                max-width: 50%;
+                max-height: 100%;
+                opacity: 1;
+            }
+
+        }
+
+        .tooltip {
+            position: absolute;
+            bottom: 120%;
+            right: 0;
+
+            background: #11334f;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+
+            white-space: nowrap;
+
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .spacer {
+            width: 100%;
+            min-height: 20px;
+            display: none;
+        }
+
+        #copiedHint {
+            position: absolute;
+            bottom: -40px;
+
+            background: #15405f;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+
+            display: none;
+        }
+
+        #setCoordsBtn:hover .tooltip {
+            opacity: 1;
+        }
+
+        #value {
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        #cnv {
+            display: block;
+            cursor: crosshair;
+            width: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+        }
+
+        .microHelp {
+            font-size: 11px;
+            line-height: 1.25;
+            color: #8eb4cd;
+            opacity: 0.95;
+            margin-top: 6px;
+        }
+
+        .headerHelp {
+            text-align: right;
+            margin-top: 6px;
+        }
+
+        .settingsHelp {
+            margin-top: -16px;
+            margin-bottom: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="right-column" id="mapContainer">
+            <div id="map">
+                <div class="coordsBlock">
+                    <div class="coords">
+                        <span id="coords"></span>
+                    </div>
+                    <button class="btn" id="copyCoordsBtn" style="padding:8px; position:relative" title="Скопіювати координати та азимут">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="3" width="10" height="14" rx="2" />
+                            <path d="M7 7H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" />
+                            <path d="M12 7h4" />
+                        </svg>
+                        <span id="copiedHint">Скопійовано</span>
+                    </button>
+                </div>
+                <div class="setCoords">
+                    <button class="btn" id="setCoordsBtn" style="position:relative" title="Центрувати карту на збережені координати">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-disc2-icon lucide-disc-2">
+                            <path d="M12 3v4" />
+                            <path d="M12 17v4" />
+                            <path d="M3 12h4" />
+                            <path d="M17 12h4" />
+                            <circle cx="12" cy="12" r="6" />
+                            <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+                        </svg>
+
+                        <span class="tooltip">Центрувати карту</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="left-column" id="leftColumn">
+            <div class="card">
+                <div class='cardHeader'>
+                    <div class="header-row">
+                        <div>
+                            <span class="lbl">Інженерний Пульт Антени</span>
+                        </div>
+                        <button id="btnToggleMap" class="btn" title="Показати або приховати карту">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1 4.5 4.8 3l3.2 1.3L11.2 3 15 4.5v7L11.2 13l-3.2-1.3L4.8 13 1 11.5z" stroke="white" stroke-width="1.2" stroke-linejoin="round"/>
+                                <path d="M4.8 3v10M8 4.3v7.4M11.2 3v10" stroke="white" stroke-width="1.2"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                        <button id="btnSettings" class="btn" title="Відкрити панель налаштувань">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8 1.5 9.1 3.4l2-.2.9 1.8 1.9.7v2l-1.9.7-.9 1.8-2-.2L8 12.5l-1.1-1.9-2 .2-.9-1.8-1.9-.7v-2l1.9-.7.9-1.8 2 .2z" stroke="white" stroke-width="1.2" stroke-linejoin="round"/>
+                                <circle cx="8" cy="7.5" r="2.1" stroke="white" stroke-width="1.2"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="microHelp headerHelp">Кнопки: Карта - показує карту, Шестерня - відкриває налаштування.</div>
+                </div>
+
+                <div class="canvasContainer">
+                    <canvas id="cnv" width="320" height="320"></canvas>
+                </div>
+
+                <div class='cardFooter'>
+                    <div class="angLbl"
+                        style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <div style="flex: 1;"></div>
+                        <div style="flex: 1; display: flex; justify-content: center; gap: 10px; align-items: center;">
+                            <span id="curAngle" style="color: #ffd166;">0°</span>
+                            <span id="arrow" style="margin: 0 10px;">→</span>
+                            <span id="setAngle" style="color: #4cc9f0;">0°</span>
+                        </div>
+                        <div style="flex: 1; display: flex; justify-content: flex-end; gap: 5px; align-items: center;">
+                            <span class="lbl">Азимут:</span>
+                            <span id="azymuthAngle" style="color: #ff6b6b;">0°</span>
+                        </div>
+                    </div>
+                    <input id="angleSlider" type="range" min="-110" max="110" value="0" step="1" style="width:100%;">
+                </div>
+            </div>
+
+            <div id="settingsCard" class="card" style="display:none; aspect-ratio: unset;">
+                <div class="cardHeader" style="margin-bottom:30px">
+                    <div class="header-row">
+                        <span class="lbl">Налаштування</span>
+                        <button class="btn" id="closeSettingsBtn" title="Закрити панель налаштувань">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="7" cy="7" r="5.2" stroke="white" stroke-width="1.3"/>
+                                <path d="M4.8 4.8 9.2 9.2M9.2 4.8 4.8 9.2" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="microHelp settingsHelp">Підказка: після зміни значень натискайте «Зберегти». Кнопка з міткою визначає центр карти.</div>
+                </div>
+
+                <div class="settingsRow">
+                    <div class="inputsContainer">
+                        <label class="lbl" for="azimuth">Калібрування азимуту (°):</label>
+                        <input id="azimuth" class="input" type="number" min="0" max="360" value="0">
+                        <div class="microHelp">Кнопка «Зберегти» застосовує калібрування в застосунку.</div>
+                    </div>
+                    <button id="saveAzimuthBtn" class="btn saveBtn" title="Зберегти калібрування азимуту">Зберегти</button>
+                </div>
+
+                <hr style="border-color:#111; margin: 15px 0;">
+
+                <div class="settingsRow">
+                    <div class="inputsContainer">
+                        <label class="lbl">Геокоординати (широта, довгота):</label>
+                        <div style="display:flex; align-items:center; gap:8px">
+                            <input id="latitude" class="input" type="number" min="-90" max="90" value="50.4501">
+                            <input id="longitude" class="input" type="number" min="-180" max="180" value="30.5234">
+                            <button id="setGeoCenterBtn" class="btn" title="Підставити поточний центр карти у поля координат">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M8 2.2a3.3 3.3 0 0 1 3.3 3.3c0 2.1-2.1 4.2-3.3 5.6-1.2-1.4-3.3-3.5-3.3-5.6A3.3 3.3 0 0 1 8 2.2Z" stroke="white" stroke-width="1.2"/>
+                                    <circle cx="8" cy="5.5" r="1.1" fill="white"/>
+                                    <path d="M2 13.1c1.1-.7 2.7-1.1 4.3-1.1h3.4c1.6 0 3.2.4 4.3 1.1" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="microHelp">Кнопка з міткою бере центр із карти; «Зберегти» синхронізує з додатком.</div>
+                    </div>
+                    <button id="saveGeoCoordinatesBtn" class="btn saveBtn" title="Зберегти геокоординати">Зберегти</button>
+                </div>
+
+                <hr style="border-color:#111; margin: 15px 0;">
+
+                <div class="settingsRow">
+                    <div class="inputsContainer">
+                        <label class="lbl" for="sweepStart">Кути обмеження (°):</label>
+                        <div style="display:flex; align-items:center; gap:8px">
+                            <input id="sweepStart" class="input" type="number" min="0" max="359" step="1" value="188" inputmode="numeric" title="Початок обмеження (0-359)">
+                            <span class="lbl" style="opacity:0.8">до</span>
+                            <input id="sweepEnd" class="input" type="number" min="0" max="359" step="1" value="262" inputmode="numeric" title="Кінець обмеження (0-359)">
+                        </div>
+                        <div class="microHelp">Поля відповідають значенням у додатку 1:1 (наприклад 188 і 262).</div>
+                    </div>
+                    <button id="saveSweepBtn" class="btn saveBtn" title="Зберегти ширину скану">Зберегти</button>
+                </div>
+
+            </div>
+
+            <div class="spacer" id="bottomSpacer"></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("cnv");
+        const ctx = canvas.getContext("2d");
+        const setSpan = document.getElementById("setAngle");
+        const curSpan = document.getElementById("curAngle");
+        const azymuthAngleSpan = document.getElementById("azymuthAngle");
+        const slider = document.getElementById("angleSlider");
+
+        let setAngle = 0;
+        let curAngle = 0;
+        let sweepAngle = 220;
+        let maxSweepAngle = 360;
+        let azimuth = 300;
+        let lastSettingsSyncAt = 0;
+        let isLoadingSettings = false;
+        let settingsPollTimer = null;
+
+        let centerLat = 50.4501;
+        let centerLng = 30.5234;
+
+        const SWEEP_MIN_DEG = 90;
+        const SWEEP_MAX_DEG = 360;
+        const FOB_MIN_DEG = 0;
+        const FOB_MAX_DEG = 359;
+
+        function clamp(value, min, max) {
+            return Math.min(max, Math.max(min, value));
+        }
+
+        function toNumber(value, fallback) {
+            const n = Number(value);
+            return Number.isFinite(n) ? n : fallback;
+        }
+
+        function normalize360(value) {
+            const n = Math.round(value) % 360;
+            return n < 0 ? n + 360 : n;
+        }
+
+        function normalize180(value) {
+            let n = Number(value);
+            while (n > 180) n -= 360;
+            while (n < -180) n += 360;
+            return n;
+        }
+
+        function sweepDegreesToCode(deg) {
+            const safeDeg = clamp(Math.round(toNumber(deg, SWEEP_MAX_DEG)), SWEEP_MIN_DEG, SWEEP_MAX_DEG);
+            return Math.round(((safeDeg - SWEEP_MIN_DEG) * 99) / (SWEEP_MAX_DEG - SWEEP_MIN_DEG));
+        }
+
+        function sweepCodeToDegrees(code) {
+            const safeCode = clamp(Math.round(toNumber(code, 99)), 0, 99);
+            return Math.round(SWEEP_MIN_DEG + (safeCode * (SWEEP_MAX_DEG - SWEEP_MIN_DEG)) / 99);
+        }
+
+        function getEl(id) {
+            return document.getElementById(id);
+        }
+
+        function setValueIfExists(id, value) {
+            const el = getEl(id);
+            if (el) {
+                el.value = value;
+            }
+        }
+
+        function setTextIfExists(id, text) {
+            const el = getEl(id);
+            if (el) {
+                el.textContent = text;
+            }
+        }
+
+        function readSweepEdge(id, fallback) {
+            const el = getEl(id);
+            if (!el) {
+                return fallback;
+            }
+
+            return clamp(Math.round(toNumber(el.value, fallback)), FOB_MIN_DEG, FOB_MAX_DEG);
+        }
+
+        function formatSweepInputs() {
+            const start = readSweepEdge("sweepStart", 0);
+            const end = readSweepEdge("sweepEnd", 1);
+            setValueIfExists("sweepStart", String(start).padStart(2, "0"));
+            setValueIfExists("sweepEnd", String(end).padStart(2, "0"));
+        }
+
+        function setSweepInputsFromCode(code) {
+            const safeCode = clamp(Math.round(toNumber(code, 99)), 0, 99);
+            const sweep = sweepCodeToDegrees(safeCode);
+            const forbiddenWidth = clamp(360 - sweep, 0, 270);
+            const start = normalize360(180 - forbiddenWidth / 2);
+            const end = normalize360(180 + forbiddenWidth / 2);
+
+            setValueIfExists("sweepStart", Math.round(start));
+            setValueIfExists("sweepEnd", Math.round(end));
+        }
+
+        function getSweepCodeFromInputs() {
+            const start = readSweepEdge("sweepStart", 0);
+            const end = readSweepEdge("sweepEnd", 0);
+            const forbiddenWidth = (end - start + 360) % 360;
+            const sweep = forbiddenWidth === 0 ? 360 : 360 - forbiddenWidth;
+            return sweepDegreesToCode(clamp(sweep, SWEEP_MIN_DEG, SWEEP_MAX_DEG));
+        }
+
+        function getValidatedSettings(cfgRaw) {
+            const cfg = cfgRaw || {};
+
+            const validatedSweep = clamp(
+                Math.round(toNumber(cfg.sweep, sweepAngle)),
+                SWEEP_MIN_DEG,
+                SWEEP_MAX_DEG
+            );
+
+            return {
+                sweep: validatedSweep,
+                maxSweep: clamp(Math.round(toNumber(cfg.max_sweep, SWEEP_MAX_DEG)), SWEEP_MIN_DEG, SWEEP_MAX_DEG),
+                fob_start: clamp(Math.round(toNumber(cfg.fob_start, normalize360(180 - (360 - validatedSweep) / 2))), FOB_MIN_DEG, FOB_MAX_DEG),
+                fob_end: clamp(Math.round(toNumber(cfg.fob_end, normalize360(180 + (360 - validatedSweep) / 2))), FOB_MIN_DEG, FOB_MAX_DEG),
+                azimuth: normalize360(toNumber(cfg.azimuth, azimuth)),
+                lat: clamp(toNumber(cfg.lat, centerLat), -90, 90),
+                lng: clamp(toNumber(cfg.lng, centerLng), -180, 180),
+                ip: typeof cfg.ip === "string" ? cfg.ip : "",
+                sn: typeof cfg.sn === "string" ? cfg.sn : "",
+                version: typeof cfg.version === "string" ? cfg.version : "",
+                c_n_180: Math.round(toNumber(cfg.c_n_180, 4150)),
+                c_n_90: Math.round(toNumber(cfg.c_n_90, 3135)),
+                c_0: Math.round(toNumber(cfg.c_0, 2107)),
+                c_90: Math.round(toNumber(cfg.c_90, 1066)),
+                c_180: Math.round(toNumber(cfg.c_180, 0))
+            };
+        }
+
+        // Convert degrees to radians
+        function deg2rad(deg) {
+            return deg * Math.PI / 180;
+        }
+
+        function drawSector(startAngle, stopAngle, radius, fillColor) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radius, deg2rad(startAngle), deg2rad(stopAngle));
+            ctx.closePath();
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+        }
+
+        function drawTick(angleDeg, innerRadius, outerRadius, color, width) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+
+            const x1 = cx + innerRadius * Math.cos(deg2rad(angleDeg - 90));
+            const y1 = cy + innerRadius * Math.sin(deg2rad(angleDeg - 90));
+            const x2 = cx + outerRadius * Math.cos(deg2rad(angleDeg - 90));
+            const y2 = cy + outerRadius * Math.sin(deg2rad(angleDeg - 90));
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.stroke();
+        }
+
+        function drawLabel(angleDeg, radius, text, color) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+
+            const x = cx + radius * Math.cos(deg2rad(angleDeg - 90));
+            const y = cy + radius * Math.sin(deg2rad(angleDeg - 90));
+
+            ctx.fillStyle = color;
+            ctx.font = "600 14px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(text, x, y);
+        }
+
+        // Draw compass and antenna arrows
+        function draw() {
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+
+            const r = Math.min(w, h) / 2 - 24;
+            const rMin = Math.min(w, h) / 11;
+
+            const palette = {
+                ringMain: "#8d99ae",
+                ringSub: "#4f5d75",
+                tickMajor: "#d9e2ec",
+                tickMinor: "#6c7a89",
+                sector: "rgba(76, 201, 240, 0.14)",
+                setArrow: "#4cc9f0",
+                curArrow: "#ffd166",
+                sweepMark: "#ff6b6b",
+                center: "#f1faee"
+            };
+
+            const startSweepAngle = -(sweepAngle) / 2;
+            const stopSweepAngle = (sweepAngle) / 2;
+            const sweepStartAbsolute = normalize360(azimuth + startSweepAngle);
+            const sweepStopAbsolute = normalize360(azimuth + stopSweepAngle);
+            const setAbsolute = normalize360(azimuth + setAngle);
+            const curAbsolute = normalize360(azimuth + curAngle);
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Subtle background glow to make the compass easier to read.
+            const bg = ctx.createRadialGradient(cx, cy, 8, cx, cy, r + 30);
+            bg.addColorStop(0, "rgba(20, 30, 48, 0.95)");
+            bg.addColorStop(1, "rgba(10, 14, 23, 0)");
+            ctx.beginPath();
+            ctx.arc(cx, cy, r + 26, 0, Math.PI * 2);
+            ctx.fillStyle = bg;
+            ctx.fill();
+
+            drawSector(sweepStartAbsolute - 90, sweepStopAbsolute - 90, r - 8, palette.sector);
+
+            drawArc(0, 360, r, palette.ringMain, 2.5);
+            drawArc(0, 360, r - 16, palette.ringSub, 1.5);
+            drawArc(0, 360, rMin + 12, palette.ringSub, 1);
+
+            for (let angle = 0; angle < 360; angle += 10) {
+                const major = angle % 30 === 0;
+                drawTick(
+                    angle,
+                    r - (major ? 13 : 8),
+                    r + (major ? 2 : 0),
+                    major ? palette.tickMajor : palette.tickMinor,
+                    major ? 2 : 1
+                );
+            }
+
+            // Cardinal labels stay fixed; all dynamic geometry rotates with azimuth.
+            drawLabel(0, r - 28, "N", "#7bdff2");
+            drawLabel(90, r - 26, "E", "#e6edf7");
+            drawLabel(180, r - 26, "S", "#e6edf7");
+            drawLabel(270, r - 26, "W", "#e6edf7");
+
+            // Sweep bounds
+            drawArrow(sweepStartAbsolute, r + 6, palette.sweepMark, 2, { head: true, headSize: 7 });
+            drawArrow(sweepStopAbsolute, r + 6, palette.sweepMark, 2, { head: true, headSize: 7 });
+
+            // Set angle (dashed) and current angle (solid + head)
+            drawArrow(setAbsolute, r + 14, palette.setArrow, 3, { dashline: true, fromRadius: 10, head: false });
+
+            drawArrow(curAbsolute, r + 14, palette.curArrow, 3.5, {
+                dashline: false,
+                fromRadius: 10,
+                head: true,
+                headSize: 11,
+                glow: "rgba(255, 209, 102, 0.35)"
+            });
+
+            drawArc(sweepStartAbsolute - 90, sweepStopAbsolute - 90, rMin, palette.curArrow, 2.5);
+            drawArc(0, 360, 8, palette.center, 4);
+            drawArc(0, 360, 3, palette.setArrow, 2);
+
+
+        }
+
+        function drawArc(startAngle, stopAngle, radius, color, width) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            // Draw outer circle
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius - 2, deg2rad(startAngle), deg2rad(stopAngle));
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.stroke();
+        }
+
+        function drawArrow(angleDeg, radius, color, width, options = {}) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+
+            const fromRadius = options.fromRadius ?? 0;
+            const dashline = options.dashline ?? false;
+            const head = options.head ?? false;
+            const headSize = options.headSize ?? 15;
+
+            const ox = cx + fromRadius * Math.cos(deg2rad(angleDeg - 90));
+            const oy = cy + fromRadius * Math.sin(deg2rad(angleDeg - 90));
+            const sx = cx + radius * Math.cos(deg2rad(angleDeg - 90));
+            const sy = cy + radius * Math.sin(deg2rad(angleDeg - 90));
+
+            if (options.glow) {
+                ctx.save();
+                ctx.shadowColor = options.glow;
+                ctx.shadowBlur = 12;
+                ctx.beginPath();
+                ctx.moveTo(ox, oy);
+                ctx.lineTo(sx, sy);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = width;
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(ox, oy);
+            ctx.lineTo(sx, sy);
+
+            if (head) {
+                const x225 = sx + headSize * Math.cos(deg2rad(angleDeg - 90 + 225));
+                const y225 = sy + headSize * Math.sin(deg2rad(angleDeg - 90 + 225));
+                const x135 = sx + headSize * Math.cos(deg2rad(angleDeg - 90 + 135));
+                const y135 = sy + headSize * Math.sin(deg2rad(angleDeg - 90 + 135));
+
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(x225, y225);
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(x135, y135);
+            }
+
+
+            if (dashline) ctx.setLineDash([width, width]);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        canvas.addEventListener("mousedown", handleCanvas);
+        canvas.addEventListener("mousemove", (e) => {
+            if (e.buttons === 1) handleCanvas(e);  // drag with left mouse
+        });
+
+        function handleCanvas(e) {
+            const box = canvas.getBoundingClientRect();
+
+            const cx = box.left + box.width / 2;
+            const cy = box.top + box.height / 2;
+
+            const dx = e.clientX - cx;
+            const dy = e.clientY - cy;
+
+            // Canvas Y-axis is inverted → flip dy
+            const angleRad = Math.atan2(-dy, dx);
+            let angleDeg = angleRad * 180 / Math.PI;
+
+            angleDeg = -angleDeg + 90;
+
+            // Convert absolute mouse angle (fixed horizon) to relative rotator angle.
+            const absoluteAngle = normalize360(angleDeg);
+            const pointerAngle = normalize180(absoluteAngle - azimuth);
+
+            sendAngle(pointerAngle);
+            slider.value = pointerAngle;
+        }
+
+        // Toggle Settings visibility
+        const btnSettings = document.getElementById("btnSettings");
+        const settingsCard = document.getElementById("settingsCard");
+        const leftCol = document.getElementById("leftColumn");
+        const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+        const bottomSpacer = document.getElementById("bottomSpacer");
+
+        btnSettings.addEventListener("click", () => {
+            settingsCard.style.display = settingsCard.style.display === "none" ? "block" : "none";
+            leftCol.style.justifyContent = settingsCard.style.display === "none" ? "center" : "flex-start";
+            bottomSpacer.style.display = settingsCard.style.display === "none" ? "none" : "block";
+            if (map) {
+                if (settingsCard.style.display === "none") {
+                    mapCenterMarker.setLatLng(startLatLng);
+                }
+                else {
+                    mapCenterMarker.setLatLng(map.getCenter());
+                }
+            }
+        });
+
+        closeSettingsBtn.addEventListener("click", () => {
+            settingsCard.style.display = "none";
+            leftCol.style.justifyContent = "center";
+            if (map) {
+                mapCenterMarker.setLatLng(startLatLng);
+            }
+        });
+
+        // Send to ESP32 when slider moves
+        slider.addEventListener("input", () => {
+            sendAngle(parseInt(slider.value));
+        });
+
+        function sendAngle(angle) {
+            setAngle = normalize180(angle);
+            setSpan.textContent = Math.round(angle) + "°";
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ command: "setAngle", value: setAngle }));
+            }
+
+            draw();
+        }
+
+        function updateMapCoordinates() {
+            const angle = Math.round(getAzimuthAngle()) + "°";
+
+            document.getElementById("coords").textContent = `${centerLat.toFixed(4)}, ${centerLng.toFixed(4)} | Аз: ${angle}`;
+        }
+
+        function startSettingsRealtimeSync() {
+            if (settingsPollTimer) {
+                return;
+            }
+
+            settingsPollTimer = setInterval(() => {
+                if (document.hidden) {
+                    return;
+                }
+
+                loadSettings(true);
+            }, 1000);
+        }
+
+        function initWebSocket() {
+            ws = new WebSocket(`ws://${location.host}/ws`);
+            ws.onopen = () => {
+                console.log("[WS] Підключено");
+                loadSettings();
+                startSettingsRealtimeSync();
+            };
+
+            ws.onerror = (err) => {
+                console.log("[WS] Error:", err);
+            };
+
+            ws.onclose = (ev) => {
+                console.log("[WS] Closed:", ev.code, ev.reason);
+                // try reconnect in 1s
+                setTimeout(initWebSocket, 1000);
+            };
+
+            ws.onmessage = (msg) => {
+                try {
+                    const json = JSON.parse(msg.data);
+
+                    if ("command" in json) {
+                        const cmd = json.command;
+                        if(cmd === "angle") {
+                            if ("angle" in json) {
+                                curAngle = normalize180(toNumber(json.angle, curAngle));
+                                setAngle = normalize180(toNumber(json.req_angle, setAngle));
+
+                                if ("az_angle" in json) {
+                                    const absoluteAz = normalize360(toNumber(json.az_angle, getAzimuthAngle()));
+                                    azymuthAngleSpan.textContent = Math.round(absoluteAz) + "°";
+
+                                    // Keep local calibration in sync so map/canvas update immediately from WS.
+                                    azimuth = normalize360(absoluteAz - curAngle);
+                                    setValueIfExists("azimuth", Math.round(azimuth));
+                                }
+
+                                slider.value = setAngle;
+
+                                curSpan.textContent = Math.round(curAngle) + "°";
+                                if (!("az_angle" in json)) {
+                                    azymuthAngleSpan.textContent = Math.round(getAzimuthAngle()) + "°";
+                                }
+                                draw();  // redraw canvas with updated angle
+                                updateMap();
+                                updateMapCoordinates()
+
+                                // Some app-side settings changes may not emit explicit "settings" command.
+                                const now = Date.now();
+                                if (now - lastSettingsSyncAt > 1500) {
+                                    lastSettingsSyncAt = now;
+                                    loadSettings();
+                                }
+                            }
+
+                            if ("dac" in json) {
+                                curDac = Math.round(json.dac);
+                            }                        
+                        }
+                        else if (cmd === "settings") {
+                            loadSettings();
+                        }
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            };
+        }
+
+        document.getElementById("saveSweepBtn")?.addEventListener("click", saveSweepAndAzimuth);
+        document.getElementById("saveAzimuthBtn")?.addEventListener("click", saveSweepAndAzimuth);
+        document.getElementById("saveIPAdrBtn")?.addEventListener("click", saveIPAddress);
+        document.getElementById("saveCalBtn")?.addEventListener("click", saveCalibration);
+        document.getElementById("setGeoCenterBtn")?.addEventListener("click", setGetCenter);
+        document.getElementById("saveGeoCoordinatesBtn")?.addEventListener("click", saveGeoCoordinates);
+
+        async function loadSettings(silent = false) {
+
+            if (isLoadingSettings) {
+                return;
+            }
+
+            isLoadingSettings = true;
+
+            try {
+                const res = await fetch("/settings");
+
+                if (!res.ok) {
+                    console.error("Помилка запиту налаштувань:", res.status);
+                    return;
+                }
+
+                const cfg = getValidatedSettings(await res.json());
+
+                sweepAngle = cfg.sweep;
+                maxSweepAngle = cfg.maxSweep;
+                setValueIfExists("sweepStart", cfg.fob_start);
+                setValueIfExists("sweepEnd", cfg.fob_end);
+                slider.min = -(sweepAngle / 2);
+                slider.max = sweepAngle / 2;
+
+                setValueIfExists("azimuth", cfg.azimuth);
+                azimuth = cfg.azimuth;
+
+                centerLat = cfg.lat;
+                centerLng = cfg.lng;
+                if (map) {
+                    const syncedCenter = L.latLng(centerLat, centerLng);
+                    startLatLng = syncedCenter;
+
+                    if (settingsCard.style.display === "none") {
+                        map.setView(syncedCenter, map.getZoom(), { animate: false });
+                    }
+
+                    if (mapCenterMarker) {
+                        mapCenterMarker.setLatLng(settingsCard.style.display === "none" ? syncedCenter : map.getCenter());
+                    }
+                }
+                setValueIfExists("latitude", centerLat);
+                setValueIfExists("longitude", centerLng);
+
+                setValueIfExists("ipAddr", cfg.ip);
+                setValueIfExists("cal__n180", cfg.c_n_180);
+                setValueIfExists("cal__n90", cfg.c_n_90);
+                setValueIfExists("cal__0", cfg.c_0);
+                setValueIfExists("cal__90", cfg.c_90);
+                setValueIfExists("cal__180", cfg.c_180);
+                setTextIfExists("snText", "S/N " + cfg.sn + " / " + cfg.version);
+
+                formatSweepInputs();
+
+                draw();
+                updateMap();
+                updateMapCoordinates();
+
+            } catch (e) {
+                if (!silent) {
+                    console.error("Помилка завантаження налаштувань:", e);
+                }
+            } finally {
+                isLoadingSettings = false;
+            }
+        }
+
+        async function saveSweepAndAzimuth() {
+            const sweepCode = getSweepCodeFromInputs();
+            const sweepDegrees = sweepCodeToDegrees(sweepCode);
+            const fobStart = readSweepEdge("sweepStart", 0);
+            const fobEnd = readSweepEdge("sweepEnd", 0);
+            formatSweepInputs();
+
+            const azValue = normalize360(toNumber(getEl("azimuth")?.value, azimuth));
+
+            const payload = {
+                sweep: sweepDegrees,
+                fob_start: fobStart,
+                fob_end: fobEnd,
+                azimuth: azValue
+            };
+
+            const res = await fetch("/settings/angle", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                loadSettings();
+            }
+            else alert("Помилка збереження скану/азимуту");
+        }
+
+        async function saveIPAddress() {
+            const payload = {
+                ip: document.getElementById("ipAddr").value.trim()
+            };
+
+            const res = await fetch("/settings/ip", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                loadSettings();
+            }
+            else alert("Помилка збереження IP");
+        }
+
+        async function saveCalibration() {
+            const payload = {
+                c_n_180: parseInt(document.getElementById("cal__n180").value),
+                c_n_90: parseInt(document.getElementById("cal__n90").value),
+                c_0: parseInt(document.getElementById("cal__0").value),
+                c_90: parseInt(document.getElementById("cal__90").value),
+                c_180: parseInt(document.getElementById("cal__180").value)
+            };
+
+            const res = await fetch("/settings/cal", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                loadSettings();
+            }
+            else alert("Помилка збереження калібрування");
+        }
+
+        async function saveGeoCoordinates() {
+            const payload = {
+                lat: parseFloat(document.getElementById("latitude").value),
+                lng: parseFloat(document.getElementById("longitude").value),
+            };
+
+            if (Number.isNaN(payload.lat) || Number.isNaN(payload.lng)) {
+                alert("Некоректні координати");
+                return;
+            }
+
+            const res = await fetch("/settings/geo", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                loadSettings();
+            }
+            else alert("Помилка збереження геокоординат");
+        }
+
+
+
+        async function setGetCenter() {
+            if (map) {
+                let centerOfMap = map.getCenter();
+                document.getElementById("latitude").value = centerOfMap.lat;
+                document.getElementById("longitude").value = centerOfMap.lng;
+            }
+        }
+
+
+
+        //Load map 
+        function loadCss(href) {
+            return new Promise((resolve, reject) => {
+                const link = document.createElement("link");
+                link.rel = "stylesheet";
+                link.href = href;
+                link.onload = resolve;
+                link.onerror = reject;
+                document.head.appendChild(link);
+            });
+        }
+
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement("script");
+                script.src = src;
+                script.defer = true;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.body.appendChild(script);
+            });
+        }
+
+        async function loadLeafletSafely() {
+            try {
+
+                if (window.L) return;
+
+                await loadCss("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css");
+                await loadScript("https://unpkg.com/leaflet@1.9.4/dist/leaflet.js");
+                await loadScript("https://cdnjs.cloudflare.com/ajax/libs/leaflet.polylinedecorator/1.7.0/leaflet.polylineDecorator.min.js");
+
+                console.log("Leaflet loaded");
+                initMap();   // your map init function
+
+            } catch (e) {
+                console.warn("Leaflet unavailable (offline)");
+                // Map will stay disabled, UI still works
+            }
+        }
+
+
+
+        // Start point (latitude, longitude)
+        let startLatLng;
+
+        let map;
+        let mapCenterMarker;
+        let line;
+        let decorator;
+        let mapVisible = false;
+
+        function getAzimuthAngle() {
+            if (curAngle < 0) {
+                return (360 + curAngle + azimuth) % 360;
+            }
+            return (curAngle + azimuth) % 360;
+        }
+
+        // Function to calculate end point based on distance and angle
+        function destinationPoint(latlng, distanceMeters, angleDeg) {
+            const R = 6378137; // Earth radius in meters
+            const δ = distanceMeters / R; // angular distance in radians
+            const θ = angleDeg * Math.PI / 180;
+
+            const φ1 = latlng.lat * Math.PI / 180;
+            const λ1 = latlng.lng * Math.PI / 180;
+
+            const φ2 = Math.asin(Math.sin(φ1) * Math.cos(δ) + Math.cos(φ1) * Math.sin(δ) * Math.cos(θ));
+            const λ2 = λ1 + Math.atan2(Math.sin(θ) * Math.sin(δ) * Math.cos(φ1), Math.cos(δ) - Math.sin(φ1) * Math.sin(φ2));
+
+            return L.latLng(φ2 * 180 / Math.PI, λ2 * 180 / Math.PI);
+        }
+
+        document.getElementById("btnToggleMap").addEventListener("click", async () => {
+            mapVisible = !mapVisible;
+
+
+            if (mapVisible && !map) {
+
+                await loadLeafletSafely();
+
+                if (window.L) {
+                    startLatLng = L.latLng(centerLat, centerLng);
+
+                    map = L.map('map').setView(startLatLng, 13);
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors'
+                    }).addTo(map);
+
+                    // create the line only once
+                    const endLatLng = destinationPoint(startLatLng, 30000, getAzimuthAngle());
+                    line = L.polyline([startLatLng, endLatLng], { color: 'red', weight: 3 }).addTo(map);
+
+
+                    mapCenterMarker = L.circleMarker(map.getCenter(), {
+                        radius: 12,
+                        color: 'red',
+                        opacity: 1
+                    }).addTo(map);
+
+                    map.on('move', () => {
+                        if (settingsCard.style.display === "none") {
+                            mapCenterMarker.setLatLng(startLatLng);
+                        }
+                        else {
+                            mapCenterMarker.setLatLng(map.getCenter());
+                        }
+                    });
+                }
+                else {
+                    mapVisible = false;
+                    alert("Не вдалося завантажити карту. Перевірте підключення до інтернету.");
+                }
+            }
+
+            //NEW LOGIC TO CONTROL ALL LAYOUT AND MAKE ANIMATION SMOOTHER
+            const container = document.querySelector('.container');
+            container.classList.toggle('map-visible', mapVisible);
+
+            if (mapVisible && map) {
+                updateMapCoordinates();
+                setTimeout(() => map.invalidateSize(), 300);
+            }
+        });
+
+        document.getElementById("copyCoordsBtn").addEventListener("click", () => {
+
+            const textToCopy = document.getElementById('coords').textContent;
+
+            const textarea = document.createElement("textarea");
+            textarea.value = textToCopy;
+            textarea.style.position = "fixed"; 
+            textarea.style.opacity = "0";
+
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+
+            try {
+                document.execCommand("copy");
+                document.getElementById("copiedHint").style.display = "block";
+                setTimeout(() => {
+                    document.getElementById("copiedHint").style.display = "none";
+                }, 2000);
+            } catch (err) {
+                alert("Не вдалося скопіювати");
+            }
+
+            document.body.removeChild(textarea);
+        });
+
+        document.getElementById('setCoordsBtn').addEventListener('click', () => {
+            if (!map) return;
+            startLatLng = L.latLng(centerLat, centerLng);
+            map.setView(startLatLng, 13);
+        })
+
+        getEl("sweepStart")?.addEventListener("blur", formatSweepInputs);
+        getEl("sweepStart")?.addEventListener("change", formatSweepInputs);
+        getEl("sweepEnd")?.addEventListener("blur", formatSweepInputs);
+        getEl("sweepEnd")?.addEventListener("change", formatSweepInputs);
+
+        function updateMap() {
+            if (mapVisible && map && line) {
+                const length = 30000;
+                const newEnd = destinationPoint(startLatLng, length, getAzimuthAngle());
+
+                line.setLatLngs([startLatLng, newEnd]);
+            }
+        }
+
+        initWebSocket();
+        loadSettings();
+        draw();
+    </script>
+</body>
+</html>

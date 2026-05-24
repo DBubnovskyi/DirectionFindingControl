@@ -1,0 +1,18 @@
+{
+  "sweep": 240,
+  "max_sweep": 240.0,
+  "azimuth": 0,
+  "lat": 48.490677,
+  "lng": 35.368084,
+  "ip": "127.0.0.11",
+  "port": 8088,
+  "sn":     "SZR-F0F0F0F0F0F0",
+  "sn_old": "SZR-4CDCD0D8CBB0",
+  "version": "ROTATOR-SZ-1M; HW:1.0; FW:1.11",
+  "reverse": 1,
+  "c_n_180": 4150,
+  "c_n_90": 3135,
+  "c_0": 2107,
+  "c_90": 1066,
+  "c_180": 0
+}
